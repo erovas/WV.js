@@ -7,28 +7,25 @@ using WV.Windows.JavaScript;
 
 namespace WV.Windows.HostObject
 {
-    public abstract class HOBase : IDisposable
+    public abstract class HOBase : Plugin
     {
         #region PRIVATE PROPERTIES
 
         [ComVisible(false)]
         public bool InnerEnablePlugins { get; set; }
-
-        [ComVisible(false)]
-        public bool Disposed { get; private set; }
-
-        protected List<string> InnerUIDS { get; }
-
-        private IWebView InnerWebView { get; }
-
-        private bool InnerAddToGlobal { get; }
+        protected bool InnerIsFrame { get; set; }
 
         #endregion
 
-        public bool EnablePlugins => this.InnerEnablePlugins;
-        public string UID => this.InnerWebView.UID;
+        #region PUBLIC PROPERTIES
 
-        public object Screens
+        public bool IsPluginsEnabled => this.InnerEnablePlugins;
+        public string Platform => App.Platform;
+        public string Version => App.Version;
+        public bool IsMainWebView => this.WebView.IsMain;
+        public bool IsFrame => this.InnerIsFrame;
+        public IScreen CurrentScreen => this.WebView.Screen;
+        public IScreen[] Screens
         {
             get
             {
@@ -42,11 +39,10 @@ namespace WV.Windows.HostObject
             }
         }
 
-        protected HOBase(IWebView webView, bool addToGlobal) 
+        #endregion
+
+        protected HOBase(IWebView webView) : base(webView)
         {
-            this.InnerUIDS = new List<string>();
-            this.InnerWebView = webView;
-            this.InnerAddToGlobal = addToGlobal;
         }
 
         /// <summary>
@@ -57,7 +53,7 @@ namespace WV.Windows.HostObject
         /// <returns></returns>
         public object EC(string pluginName, params object[] jsArgs)
         {
-            if (!this.EnablePlugins)
+            if (!this.IsPluginsEnabled)
                 return "Plugins are disabled";
 
             if (!AppManager.PluginTypes.ContainsKey(pluginName))
@@ -70,7 +66,7 @@ namespace WV.Windows.HostObject
             try
             {
                 List<object> Args = jsArgs.ToList();
-                Args.Insert(0, this.InnerWebView);
+                Args.Insert(0, this.WebView);
                 pluginInstance = Activator.CreateInstance(pluginType, Args.ToArray());
 
                 if (pluginInstance == null)
@@ -83,24 +79,7 @@ namespace WV.Windows.HostObject
                 return ex.Message;
             }
 
-            AddGlobalPluginInstance(pluginObj.UID, pluginInstance);
             return pluginInstance;
-        }
-
-        /// <summary>
-        /// Execute recovery
-        /// </summary>
-        /// <param name="UID"></param>
-        /// <returns></returns>
-        public object? ER(string UID)
-        {
-            if (!this.EnablePlugins)
-                return "Plugins are disabled";
-
-            if (!AppManager.PluginInstaces.ContainsKey(UID))
-                return null;
-
-            return AppManager.PluginInstaces[UID];
         }
 
         /// <summary>
@@ -113,94 +92,95 @@ namespace WV.Windows.HostObject
         /// <returns></returns>
         public object TF(string jsTypeName, object raw, object csParsed, string stringified)
         {
-            JSType jsType = JSType.@null;
-            object? csValue = null;
-            object? jsValue;
+            JSType jsType = JSType.Custom;
 
             try
             {
                 jsType = (JSType)Enum.Parse(typeof(JSType), jsTypeName);
-
-                switch (jsType)
-                {
-                    case JSType.@null:
-                        return new Null();
-                    case JSType.undefined:
-                        return new Undefined();
-
-                    case JSType.Boolean:
-                        return new JavaScript.Boolean((bool)raw);
-
-                    case JSType.Number:
-                        return new Number((double)raw);
-
-                    case JSType.String:
-                        return new JavaScript.String(raw + "");
-
-                    //case JSType.Object:
-                    //    break;
-
-                    case JSType.Function:
-                        return new Function(raw, stringified);
-                    
-                    case JSType.Array:
-                        return new JavaScript.Array((object[])raw, (object[])csParsed, stringified);
-
-                    case JSType.BigInt:
-                        return new BigInt(raw, BigInteger.Parse(csParsed+""), csParsed + "");
-
-                    case JSType.Symbol:
-                        return new Symbol(raw, stringified);
-
-                    case JSType.Proxy:
-                        return new Proxy(raw, stringified);
-
-                    case JSType.Date:
-                        return new Date((DateTime)raw, DateTime.ParseExact(csParsed + "", "dd/MM/yyyy HH:mm:ss", CultureInfo.InvariantCulture).ToUniversalTime(), stringified);
-
-                    case JSType.Custom:
-                        return new Custom(raw, stringified);
-
-                    case JSType.Uint8Array:
-                        return new Uint8Array(raw, ((object[])csParsed).Cast<byte>().ToArray());
-
-                    case JSType.Uint8ClampedArray:
-                        return new Uint8ClampedArray(raw, ((object[])csParsed).Cast<byte>().ToArray());
-
-                    case JSType.Int8Array:
-                        return new Int8Array(raw, ((object[])csParsed).Cast<sbyte>().ToArray());
-
-                    case JSType.Uint16Array:
-                        return new Uint16Array(raw, ((object[])csParsed).Cast<ushort>().ToArray());
-
-                    case JSType.Int16Array:
-                        return new Int16Array(raw, ((object[])csParsed).Cast<short>().ToArray());
-
-                    case JSType.Uint32Array:
-                        return new Uint32Array(raw, ((object[])csParsed).Cast<uint>().ToArray());
-
-                    case JSType.Int32Array:
-                        return new Int32Array(raw, ((object[])csParsed).Cast<int>().ToArray());
-
-                    case JSType.Float32Array:
-                        return new Float32Array(raw, ((object[])csParsed).Cast<float>().ToArray());
-
-                    case JSType.Float64Array:
-                        return new Float64Array(raw, ((object[])csParsed).Cast<double>().ToArray());
-
-                    case JSType.BigUint64Array:
-                        return new BigUint64Array(raw, ((object[])csParsed).Cast<string>().Select(BigInteger.Parse).ToArray());
-
-                    case JSType.BigInt64Array:
-                        return new BigInt64Array(raw, ((object[])csParsed).Cast<string>().Select(BigInteger.Parse).ToArray());
-
-                    default:
-                        return "JSType [" + jsTypeName + "] not exists";
-                }
             }
             catch (Exception ex) 
             {
                 return ex.Message;
+            }
+
+            switch (jsType)
+            {
+                case JSType.@null:
+                    return new Null();
+                case JSType.undefined:
+                    return new Undefined();
+
+                case JSType.Boolean:
+                    return new JavaScript.Boolean((bool)raw);
+
+                case JSType.Number:
+                    return new Number((double)raw);
+
+                case JSType.String:
+                    return new JavaScript.String(raw + "");
+
+                //case JSType.Object:
+                //    break;
+
+                case JSType.Function:
+                    return new Function(raw, stringified);
+
+                case JSType.AsyncFunction:
+                    return new Function(raw, stringified, true);
+
+                case JSType.Array:
+                    return new JavaScript.Array((object[])raw, (object[])csParsed, stringified);
+
+                case JSType.BigInt:
+                    return new BigInt(raw, BigInteger.Parse(csParsed + ""), csParsed + "");
+
+                case JSType.Symbol:
+                    return new Symbol(raw, stringified);
+
+                case JSType.Proxy:
+                    return new Proxy(raw, stringified);
+
+                case JSType.Date:
+                    return new Date((DateTime)raw, DateTime.ParseExact(csParsed + "", "dd/MM/yyyy HH:mm:ss", CultureInfo.InvariantCulture).ToUniversalTime(), stringified);
+
+                case JSType.Custom:
+                    return new Custom(raw, stringified);
+
+                case JSType.Uint8Array:
+                    return new Uint8Array(raw, ((object[])csParsed).Cast<byte>().ToArray());
+
+                case JSType.Uint8ClampedArray:
+                    return new Uint8ClampedArray(raw, ((object[])csParsed).Cast<byte>().ToArray());
+
+                case JSType.Int8Array:
+                    return new Int8Array(raw, ((object[])csParsed).Cast<sbyte>().ToArray());
+
+                case JSType.Uint16Array:
+                    return new Uint16Array(raw, ((object[])csParsed).Cast<ushort>().ToArray());
+
+                case JSType.Int16Array:
+                    return new Int16Array(raw, ((object[])csParsed).Cast<short>().ToArray());
+
+                case JSType.Uint32Array:
+                    return new Uint32Array(raw, ((object[])csParsed).Cast<uint>().ToArray());
+
+                case JSType.Int32Array:
+                    return new Int32Array(raw, ((object[])csParsed).Cast<int>().ToArray());
+
+                case JSType.Float32Array:
+                    return new Float32Array(raw, ((object[])csParsed).Cast<float>().ToArray());
+
+                case JSType.Float64Array:
+                    return new Float64Array(raw, ((object[])csParsed).Cast<double>().ToArray());
+
+                case JSType.BigUint64Array:
+                    return new BigUint64Array(raw, ((object[])csParsed).Cast<string>().Select(BigInteger.Parse).ToArray());
+
+                case JSType.BigInt64Array:
+                    return new BigInt64Array(raw, ((object[])csParsed).Cast<string>().Select(BigInteger.Parse).ToArray());
+
+                default:
+                    return "JSType [" + jsTypeName + "] not exists";
             }
         }
 
@@ -220,66 +200,21 @@ namespace WV.Windows.HostObject
         }
 
         /// <summary>
-        /// Execute kill
+        /// Shutdown application
         /// </summary>
-        /// <param name="UID"></param>
-        /// <returns></returns>
-        public bool EK(string UID)
+        public void Shutdown()
         {
-            return AppManager.PluginInstaces.Remove(UID);
+            Environment.Exit(0);
         }
 
-        [ComVisible(false)]
-        public virtual void Reloaded()
+        /// <summary>
+        /// Restart application
+        /// </summary>
+        public void Restart()
         {
-            // Eliminar las instancias de plugins creadas por este WebView
-            foreach (string item in this.InnerUIDS)
-                if(AppManager.PluginInstaces.ContainsKey(item))
-                    ((IDisposable)AppManager.PluginInstaces[item]).Dispose();
-
-            foreach (string item in this.InnerUIDS)
-                AppManager.PluginInstaces.Remove(item);
-
-            this.InnerUIDS.Clear();
+            Application.Restart();
+            Shutdown();
         }
-
-        #region PRIVATE METHODS
-
-        private void AddGlobalPluginInstance(string UID, object pluginInstance)
-        {
-            if (!this.InnerAddToGlobal)
-                return;
-
-            this.InnerUIDS.Add(UID);
-            AppManager.PluginInstaces.Add(UID, pluginInstance);
-        }
-
-        [ComVisible(false)]
-        public void Dispose()
-        {
-            Dispose(true);
-
-            // Evitar que el Garbage Collector llame al destructor/Finalizador ~WVPlugin()
-            GC.SuppressFinalize(this);
-            this.Disposed = true;
-        }
-
-        protected virtual void Dispose(bool disposing)
-        {
-            if (this.Disposed)
-                return;
-
-            if (disposing)
-                Reloaded();
-        }
-
-        ~HOBase()
-        {
-            Dispose(false);
-            this.Disposed = true;
-        }
-
-        #endregion
 
     }
 }

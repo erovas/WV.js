@@ -6,66 +6,143 @@ const SYNC = WIN[NAME].SYNC;
 const ASYNC = WIN[NAME].ASYNC;
 const ISFRAME = WIN[NAME].ISFRAME;
 const UID = SYNC.UID;
-const TO_STRING = Object.prototype.toString;
+const PLATFORM = SYNC.Platform;
+const VERSION = SYNC.Version;
+const ISMAINWEBVIEW = SYNC.IsMainWebView;
+const ARGS = SYNC.Args;
+const TO_STRING = Object.toString;
 const STRINGIFY = JSON.stringify;
 const ARRAY_FROM = Array.from;
 const IS_ARRAY = Array.isArray;
 const ARRAYS = ['Uint8Array', 'Uint8ClampedArray', 'Int8Array', 'Uint16Array', 'Int16Array', 'Uint32Array', 'Int32Array', 'Float32Array', 'Float64Array', 'BigUint64Array', 'BigInt64Array'];
 
-WIN[NAME] = {
-    SendMessage,
-    New,
-    Kill,
-    NewAsync,
-    KillAsync,
-    ToJSValue,
-    ToJSValueAsync,
-    Recover,
-    RecoverAsync,
-    get UID() {
-        return UID;
+const EXPOSE_ASYNC = Object.create(null);
+const EXPOSE = Object.create(null);
+
+Object.defineProperties(EXPOSE, {
+    Shutdown: {
+        value: () => SYNC.Shutdown()
     },
-    get IsFrame() {
-        return ISFRAME;
+    Restart: {
+        value: () => SYNC.Restart()
     },
-    get EnablePlugins() {
-        return SYNC.EnablePlugins;
+    SendMessage: {
+        value: SendMessage
     },
-    get Screens() {
-        return SYNC.Screens;
+    ToJSValue: {
+        value: ToJSValue
+    },
+    Platform: {
+        get: () => PLATFORM
+    },
+    Version: {
+        get: () => VERSION
+    },
+    Args: {
+        get: () => [...ARGS]
+    },
+    CurrentScreen: {
+        get: () => SYNC.CurrentScreen
+    },
+    Screens: {
+        get: () => SYNC.Screens
+    },
+    IsMainWebView: {
+        get: () => ISMAINWEBVIEW
+    },
+    IsFrame: {
+        get: () => ISFRAME
+    },
+    IsPluginsEnabled: {
+        get: () => SYNC.IsPluginsEnabled
+    },
+    new: {
+        value: (name, ...args) => {
+            args.unshift(name)
+            const result = SYNC.EC.apply(SYNC, args);
+            return ThereIsError(result);
+        }
+    },
+    async: {
+        value: () => EXPOSE_ASYNC
     }
-};
+});
+
+Object.defineProperties(EXPOSE_ASYNC, {
+    Shutdown: {
+        value: async () => await ASYNC.Shutdown()
+    },
+    Restart: {
+        value: async () => await ASYNC.Restart()
+    },
+    SendMessage: {
+        value: async message => SendMessage(message)
+    },
+    ToJSValue: {
+        value: ToJSValueAsync
+    },
+    Platform: {
+        get: async () => PLATFORM
+    },
+    Version: {
+        get: async () => VERSION
+    },
+    Args: {
+        get: async () => [...ARGS]
+    },
+    CurrentScreen: {
+        get: async () => await ASYNC.CurrentScreen
+    },
+    Screens: {
+        get: async () => await ASYNC.Screens
+    },
+    IsMainWebView: {
+        get: async () => ISMAINWEBVIEW
+    },
+    IsFrame: {
+        get: async () => ISFRAME
+    },
+    IsPluginsEnabled: {
+        get: async () => await ASYNC.IsPluginsEnabled
+    },
+    new: {
+        value: async (name, ...args) => {
+            args.unshift(name)
+            const result = await ASYNC.EC.apply(SYNC, args);
+            return ThereIsError(result);
+        }
+    },
+    sync: {
+        value: async () => EXPOSE
+    }
+})
+
+if (ISFRAME) {
+    delete EXPOSE.Shutdown;
+    delete EXPOSE.Restart;
+    delete EXPOSE.IsMainWebView;
+    delete EXPOSE.Args;
+
+    delete EXPOSE_ASYNC.Shutdown;
+    delete EXPOSE_ASYNC.Restart;
+    delete EXPOSE_ASYNC.IsMainWebView;
+    delete EXPOSE_ASYNC.Args;
+}
+
+Object.defineProperty(WIN, NAME, {
+    get() {
+        return EXPOSE;
+    }
+});
 
 //#region PUBLIC FUNCTIONS
 
 function SendMessage(message) {
     try {
-        WV.postMessage(message);
+        return WV.postMessage(message);
     } catch (e) {
-        WV.postMessage(message + '');
+        return WV.postMessage(message + '');
     }
-}
-
-function New(name, ...args){
-    args.unshift(name)
-    const result = SYNC.EC.apply(SYNC, args);
-    return ThereIsError(result);
-}
-
-function Kill(uid){
-    const result = SYNC.EK(uid);
-    return ThereIsError(result);
-}
-
-async function NewAsync(name, ...args){
-    args.unshift(name)
-    const result = await ASYNC.EC.apply(ASYNC, args);
-    return ThereIsError(result);
-}
-
-async function KillAsync(uid){
-    const result = await ASYNC.EK(uid);
-    return ThereIsError(result);
 }
 
 function ToJSValue(obj){
@@ -118,7 +195,7 @@ function ToJSValue(obj){
         default:
 
             for (let i = 0; i < ARRAYS.length - 2; i++)
-                if(jstype === ARRAYS[i] && i < ARRAYS.length - 2){
+                if(jsType === ARRAYS[i] && i < ARRAYS.length - 2){
                     csParsed = ARRAY_FROM(raw);
                     break;
                 }
@@ -126,7 +203,7 @@ function ToJSValue(obj){
             // 'BigUint64Array', 'BigInt64Array'
             if (!IS_ARRAY(csParsed)) 
                 for (let i = ARRAYS.length - 2; i < ARRAYS.length; i++)
-                    if(jstype === ARRAYS[i]){
+                    if(jsType === ARRAYS[i]){
                         csParsed = [];
                         for (let j = 0; j < raw.length; j++) 
                             csParsed.push(ToString(raw[j]));
@@ -241,16 +318,6 @@ async function ToJSValueAsync(obj){
     return ThereIsError(output);
 }
 
-function Recover(uid) {
-    const result = SYNC.ER(uid + '');
-    return ThereIsError(result);
-}
-
-async function RecoverAsync(uid) {
-    const result = await ASYNC.ER(uid + '');
-    return ThereIsError(result);
-}
-
 //#endregion
 
 //#region PRIVATE FUNCTIONS
@@ -267,7 +334,7 @@ function ToString(obj, ...args){
 }
 
 function IsPlainObject(obj){
-    if (typeof obj === 'object' && ToString(obj) === '[object Object]') {
+    if (typeof obj === 'object' && Object.prototype.toString.call(obj) === '[object Object]') {
         let props = Object.getPrototypeOf(obj);
         return props === null || props.constructor === Object;
     }
@@ -275,14 +342,17 @@ function IsPlainObject(obj){
 }
 
 /**
- * https://gist.github.com/Raiondesu/d4491ae05b46ea32d6d803066f9d7997
+ * Modified from https://gist.github.com/Raiondesu/d4491ae05b46ea32d6d803066f9d7997
  * Credit to https://stackoverflow.com/a/49651719 and https://stackoverflow.com/a/60323358
  * @param {object} obj 
  * @returns 
  */
-function IsProxy(obj){
+function IsProxy(obj) {
+    if (typeof obj === 'function')
+        return false;
+
     try {
-        postMessage(obj, window);
+        postMessage(obj, WIN);
     } catch (error) {
         return error && error.code === 25;
     }
@@ -295,12 +365,12 @@ function IsProxy(obj){
  * @param {Date} date 
  */
 function DateToString(date){
-    const YY = date.getFullYear();
-    const MM = ToString(date.getMonth() + 1).padStart(2, 0);
-    const DD = ToString(date.getDate()).padStart(2, 0);
-    const hh = ToString(date.getHours()).padStart(2, 0);
-    const mm = ToString(date.getMinutes()).padStart(2, 0);
-    const ss = ToString(date.getSeconds()).padStart(2, 0);
+    const YY = date.getUTCFullYear();
+    const MM = ToString(date.getUTCMonth() + 1).padStart(2, 0);
+    const DD = ToString(date.getUTCDate()).padStart(2, 0);
+    const hh = ToString(date.getUTCHours()).padStart(2, 0);
+    const mm = ToString(date.getUTCMinutes()).padStart(2, 0);
+    const ss = ToString(date.getUTCSeconds()).padStart(2, 0);
 
     return DD + '/' + MM + '/' + YY + ' ' + hh + ':' + mm + ':' + ss;
 }
@@ -367,14 +437,14 @@ function GetJSType(obj){
     if (obj === null || obj === undefined)
         return obj + '';
 
-    if (IsProxy(obj))
-        return 'Proxy';
-
     if (IsPlainObject(obj))
         return 'Object';
 
     if (typeof obj === 'symbol')
         return 'Symbol';
+
+    if (IsProxy(obj))
+        return 'Proxy';
 
     return obj.constructor.name;
 }

@@ -4,10 +4,14 @@ namespace WV.Windows.JavaScript
 {
     public class Function : WV.JavaScript.Function
     {
-        public Function(object fn, string stringified) : base()
+        public Function(object fn, string stringified, bool isAsync = false) : base()
         {
             _JSValue = fn;
             _Stringified = stringified;
+            _Async = isAsync;
+
+            if (_Async)
+                _JSType = WV.JavaScript.Enums.JSType.AsyncFunction;
         }
 
         public override void Execute(params object[] args)

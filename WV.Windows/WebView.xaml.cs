@@ -2,8 +2,11 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
+using System.Net;
 using System.Reflection.Metadata;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
@@ -26,6 +29,8 @@ using WV.Windows.Constants;
 using WV.Windows.HostObject;
 using WV.Windows.Utils;
 using static System.Windows.Forms.AxHost;
+using Microsoft.VisualBasic.Logging;
+using System.Security.Policy;
 
 namespace WV.Windows
 {
@@ -88,7 +93,7 @@ namespace WV.Windows
 
         private IScreen InnerScreen { get; set; }
 
-        private WebView()
+        private WebView(string[] args)
         {
             InitializeComponent();
 
@@ -98,7 +103,7 @@ namespace WV.Windows
             this.BackupMinWidth = 1;
             this.BackupMinHeight = 1;
 
-            this.InnerHOWindows = new HOWindows(this);
+            this.InnerHOWindows = new HOWindows(this, args);
 
             // Seteo eventos nativos disparados en JS
             this.LocationChanged += WPF_LocationChanged;
@@ -137,8 +142,10 @@ namespace WV.Windows
                 //Para quitar los 3 puntos de menu contextual cuando se selecciona un texto
                 CoreWebView2EnvironmentOptions threeDotsOff = new("--disable-features=msWebOOUI,msPdfOOUI");
                 //Poner el menú contextual en un idioma
-                threeDotsOff.Language = this.Language;
+                threeDotsOff.Language = AppManager.Language;
+                threeDotsOff.AdditionalBrowserArguments = "--disable-web-security --allow-file-access-from-files --allow-file-access";
                 AppManager.Environment = await CoreWebView2Environment.CreateAsync(null, AppManager.UserDataPath, threeDotsOff);
+                //AppManager.Environment = await CoreWebView2Environment.CreateAsync(null, AppManager.UserDataPath);
             }
 
             //Utilizar el Enviroment original
@@ -192,7 +199,7 @@ namespace WV.Windows
             this.EnablePlugins = this.EnablePlugins;
             this.Visible = this.Visible;
 
-            //this.WV2.CoreWebView2.OpenDevToolsWindow();
+            this.WV2.CoreWebView2.OpenDevToolsWindow();
             //this.WV2.CoreWebView2.OpenTaskManagerWindow();
 
             //this.WV2.CoreWebView2.OpenDefaultDownloadDialog();
@@ -218,17 +225,126 @@ namespace WV.Windows
 
             this.WV2.CoreWebView2.ContentLoading += WV2_ContentLoading;
 
+
+            string filter = "*";   // or "*" for all requests
+            this.WV2.CoreWebView2.AddWebResourceRequestedFilter(filter, CoreWebView2WebResourceContext.All);
+            this.WV2.CoreWebView2.WebResourceRequested += WV2_ResourceRequested;
+
             this.InnerScreen = this.Screen;
+            
         }
+
+        private void WV2_ResourceRequested(object? sender, CoreWebView2WebResourceRequestedEventArgs e)
+        {
+            //e.Request.Method = "GET";
+            //e.Request.Content 
+            //var header = e.Request.Headers;
+            //e.Request.Uri = "";
+            /*
+            if(e.Response != null)
+            {
+                Stream? contentResponse = e.Response.Content;
+                var headerResponse = e.Response.Headers;
+                var ReasonPhrase = e.Response.ReasonPhrase;
+                var StatusCode = e.Response.StatusCode;
+
+                var adsd = "";
+            }
+
+            
+
+
+            var headers = e.Request.Headers;
+            var Method = e.Request.Method;
+            string postData = null;
+            var content = e.Request.Content;
+
+            // get content from stream
+            if (content != null)
+            {
+                using (var ms = new MemoryStream())
+                {
+                    content.CopyTo(ms);
+                    ms.Position = 0;
+                    postData = Encoding.UTF8.GetString(ms.ToArray());
+                }
+            }
+            var url = e.Request.Uri.ToString();
+
+            // collect the headers from the collection into a string buffer
+            StringBuilder sb = new StringBuilder();
+            foreach (var header in headers)
+            {
+                sb.AppendLine($"{header.Key}: {header.Value}");
+            }
+
+            // for demo write out captured string vals
+            Debug.WriteLine($"{url}\n{sb.ToString()}\n{postData}\n---");
+            */
+            //e.Response.StatusCode
+
+            //var response = new HttpResponseMessage();
+            //var response = new CoreWebView2WebResourceResponse();
+            //response.StatusCode = HttpStatusCode.NotFound;
+            //CoreWebView2WebResourceResponse response = this.WV2.CoreWebView2.Environment.CreateWebResourceResponse(fs, 200, "OK", "Content-Type: image/jpeg");
+
+            //Uri uriasd = new Uri(e.Request.Uri);
+
+
+            //string[] segmentos = uriasd.Segments;
+
+            //string urls = File.ReadAllText("D:/Documents/asd.txt");
+            //arrUrls = urls.Split(Environment.NewLine);
+
+            //if (arrUrls.Contains(segmentos[segmentos.Length - 1])) 
+            //if (arrUrls.Contains(uriasd.PathAndQuery))
+            //if(isAd(e.Request.Uri))
+            //{
+            //    CoreWebView2WebResourceResponse response = this.WV2.CoreWebView2.Environment.CreateWebResourceResponse(null, (int)HttpStatusCode.Forbidden, "Blocked", string.Empty);
+            //    e.Response = response;
+            //}
+
+            //CoreWebView2WebResourceResponse response = this.WV2.CoreWebView2.Environment.CreateWebResourceResponse(null, (int)HttpStatusCode.Forbidden, "Blocked", string.Empty);
+            //e.Response = response;
+        }
+
+        //private string[] arrUrls;
+
+        //public string getHost(string url)
+        //{
+        //    return new Uri(url).Host;
+        //}
+
+        //public bool isAd(string url)
+        //{
+        //    try
+        //    {
+        //        return isAdHost(getHost(url)) || arrUrls.Contains(new Uri(url).AbsolutePath);
+        //        //return arrUrls.Contains(new Uri(url).AbsolutePath);
+        //    }
+        //    catch (Exception e)
+        //    {
+        //        return false;
+        //    }
+
+        //}
+
+        //private bool isAdHost(string host)
+        //{
+        //    if (string.IsNullOrEmpty(host))
+        //    {
+        //        return false;
+        //    }
+        //    int index = host.IndexOf(".");
+
+        //    return index >= 0 && (arrUrls.Contains(host) || index + 1 < host.Length && isAdHost(host.Substring(index + 1)));
+        //}
 
         #region WEBVIEW EVENTS
 
         private void WV2_ContentLoading(object? sender, CoreWebView2ContentLoadingEventArgs e)
         {
             this.IsLoadingPage = true;
-
-            // limpiar Instancias de plugins creados por el Webview
-            this.InnerHOWindows.Reloaded();
 
             //if (this.InnerFirstLoad)
             //    this.InnerFirstLoad = false;
@@ -665,6 +781,10 @@ namespace WV.Windows
                 return IntPtr.Zero;
             }
 
+            // Soluciona excepción cuando se despliega el sysmenu y se desenfoca
+            if (msg != WindowsMessages.WM_SYSCOMMAND)
+                return IntPtr.Zero;
+
             //Click izquierdo sobre alguna opción del SysMenu
             if (msg == WindowsMessages.WM_SYSCOMMAND)
             {
@@ -725,8 +845,6 @@ namespace WV.Windows
             //this.Domain = parameters.Domain;
             this.EnableFramePlugins = parameters.EnableFramePlugins;
             this.EnablePlugins = parameters.EnablePlugins;
-
-            
 
             this.StartupLocation = parameters.StartupLocation;
 

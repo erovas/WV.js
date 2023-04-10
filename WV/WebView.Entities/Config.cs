@@ -22,6 +22,11 @@
         /// <summary>
         /// 
         /// </summary>
+        public string? Language { get; set; }
+
+        /// <summary>
+        /// 
+        /// </summary>
         public Parameters Parameters 
         { 
             get => _Parameters; 

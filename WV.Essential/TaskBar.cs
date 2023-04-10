@@ -1,7 +1,7 @@
 ﻿using WV.WebView;
 using WV.WebView.Enums;
 
-namespace Essential
+namespace WV.Essential
 {
     public class TaskBar
     {

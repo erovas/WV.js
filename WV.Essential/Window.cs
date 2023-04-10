@@ -1,8 +1,7 @@
-﻿using WV;
-using WV.WebView;
+﻿using WV.WebView;
 using WV.WebView.Enums;
 
-namespace Essential
+namespace WV.Essential
 {
     public class Window : Plugin, IPlugin
     {
@@ -17,9 +16,9 @@ namespace Essential
             this.WVTaskBar = new TaskBar(this.WVC.TaskBar);
         }
 
-        public Window(IWebView webView, string jsonParameters) : base(webView)
+        public Window(IWebView webView, string jsonParameters, string[]? args = null) : base(webView)
         {
-            this.WVC = IWebView.CreateInstance(jsonParameters);
+            this.WVC = IWebView.CreateInstance(jsonParameters, args);
             this.WVTaskBar = new TaskBar(this.WVC.TaskBar);
         }
 
@@ -62,11 +61,12 @@ namespace Essential
         //-------------------------------------------//
 
         public string? Uri => this.WVC.Uri;
+        public bool IsMain => this.WVC.IsMain;
         public bool IsActive => WVC.IsActive;
         public bool IsFocused => WVC.IsFocused;
         public bool IsFullScreen => WVC.IsFullScreen;
         public bool IsLoadingPage => WVC.IsLoadingPage;
-        public string? Language => WVC.Language;
+        //public string? Language => WVC.Language;
         public bool LocalServer => WVC.LocalServer;
         public string Domain => WVC.Domain;
         public string? IndexPage => WVC.IndexPage;

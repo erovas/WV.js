@@ -10,6 +10,7 @@ namespace WV.JavaScript
         protected object? _JSValue;
         protected string _Stringified = JSType.@null.ToString();
 
+        public string Name => this.GetType().Name;
         public Type? CSType => _CSType;
         public JSType JSType => _JSType;
         public object? CSValue => _CSValue;

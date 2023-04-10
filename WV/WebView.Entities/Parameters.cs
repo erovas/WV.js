@@ -22,10 +22,6 @@ namespace WV.WebView.Entities
 
         #endregion
 
-        /// <summary>
-        /// 
-        /// </summary>
-        public string? Language { get; set; }
 
         /// <summary>
         /// 

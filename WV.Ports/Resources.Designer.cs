@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace Essential {
+namespace WV.Ports {
     using System;
     
     
@@ -39,7 +39,7 @@ namespace Essential {
         internal static global::System.Resources.ResourceManager ResourceManager {
             get {
                 if (object.ReferenceEquals(resourceMan, null)) {
-                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("Essential.Resources", typeof(Resources).Assembly);
+                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("WV.Ports.Resources", typeof(Resources).Assembly);
                     resourceMan = temp;
                 }
                 return resourceMan;
@@ -61,32 +61,56 @@ namespace Essential {
         }
         
         /// <summary>
-        ///   Busca una cadena traducida similar a const New = wv.New;
-        ///const NewAsync = wv.NewAsync;
+        ///   Busca una cadena traducida similar a const Name = &apos;Ports&apos;;
+        ///const NameAsync = Name + &apos;Async&apos;;
+        ///const WV = window.wv;
+        ///const New = WV.New;
+        ///const NewAsync = WV.NewAsync;
+        ///const Recover = WV.Recover;
+        ///const RecoverAsync = WV.RecoverAsync;
+        ///let StorageObj = null;
+        ///let StorageAsync = null;
         ///
-        ///wv.New = function (name, ...args) {
-        ///    if (name === &apos;Window&apos; &amp;&amp; args.length &gt; 0) {
-        ///        try {
-        ///            args = JSON.stringify(args[0]);
-        ///        } catch (e) {
-        ///            args = args + &apos;&apos;;
-        ///        }
-        ///
-        ///        return New(name, args);
+        ///Object.defineProperty(WV, Name, {
+        ///    get() {
+        ///        TryCreate();
+        ///        return StorageObj;
         ///    }
+        ///});
         ///
-        ///    return New(name, ...args);
-        ///}
+        ///Object.defineProperty(WV, NameAsync, {
+        ///    get() {
+        ///        TryCreate();
+        ///        return StorageAsync;
+        ///    }
+        ///});
         ///
-        ///wv.NewAsync = async function (name, ...args) {
-        ///    if (name === &apos;Window&apos; &amp;&amp; args.length &gt; 0) {
-        ///        try {
-        ///            args = JSON.stringify(args[0]);
-        ///        } [resto de la cadena truncado]&quot;;.
+        ///WV.New = (name, ...args) =&gt;  [resto de la cadena truncado]&quot;;.
         /// </summary>
-        internal static string WindowScript {
+        internal static string PortsScript {
             get {
-                return ResourceManager.GetString("WindowScript", resourceCulture);
+                return ResourceManager.GetString("PortsScript", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Busca una cadena traducida similar a const Name = &apos;SerialPort&apos;;
+        ///const WV = window.wv;
+        ///const New = WV.New;
+        ///const NewAsync = WV.NewAsync;
+        ///const Recover = WV.Recover;
+        ///const RecoverAsync = WV.RecoverAsync;
+        ///const ToJSValue = WV.ToJSValue;
+        ///const DefaultFn = (eventType = &apos;&apos;, eventValue = 0) =&gt; { console.log(&apos;Event Type: &apos; + eventType + &apos; \n&apos; + &apos;Event Value: &apos; + eventValue) };
+        ///const DefaultUint8Array = new Uint8Array();
+        ///const DefaultInt32Array = new Int32Array();
+        ///const INSTANCES = new Map();    // Map(UID, Map(function, proxy))
+        ///
+        ///const LOCA [resto de la cadena truncado]&quot;;.
+        /// </summary>
+        internal static string SerialPortScript {
+            get {
+                return ResourceManager.GetString("SerialPortScript", resourceCulture);
             }
         }
     }

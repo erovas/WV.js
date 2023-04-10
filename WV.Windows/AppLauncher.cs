@@ -13,31 +13,34 @@ namespace WV.Windows
     {
         public WebView? WVjs { get; private set; }
 
-        [System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [System.CodeDom.Compiler.GeneratedCodeAttribute("PresentationBuildTasks", "6.0.3.0")]
-        public void InitializeComponent()
+        //[System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        //[System.CodeDom.Compiler.GeneratedCodeAttribute("PresentationBuildTasks", "6.0.3.0")]
+        public void InitializeComponent(string[] args)
         {
             using (AppConfig appConfig = GetInitializedAppConfig())
             {
+                Config config = appConfig.Config;
+
                 // Obtener las rutas del App.config
                 AppManager.SrcPath = appConfig.SrcPath;
                 AppManager.PluginsPath = appConfig.PluginPath;
                 AppManager.UserDataPath = appConfig.UserDataPath;
+                AppManager.Language = config.Language;
 
-                Config config = appConfig.Config;
                 Parameters parameters = config.Parameters;
                 ImportPlugins(config);
-                this.WVjs = new WebView(parameters);
+                this.WVjs = new WebView(parameters, args);
             }
         }
 
-        [System.STAThreadAttribute()]
-        [System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [System.CodeDom.Compiler.GeneratedCodeAttribute("PresentationBuildTasks", "6.0.3.0")]
+        //[System.STAThreadAttribute()]
+        //[System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        //[System.CodeDom.Compiler.GeneratedCodeAttribute("PresentationBuildTasks", "6.0.3.0")]
+        [STAThread]
         public static int Main(string[] args)
         {
             AppLauncher app = new AppLauncher();
-            app.InitializeComponent();
+            app.InitializeComponent(args);
             return app.Run(app.WVjs);
         }
 
@@ -164,7 +167,7 @@ namespace WV.Windows
         private static string AUX_PackJScriptPlugin(string pluginScript)
         {
             // si NO existe el objeto 'wv', pues NO ejecutar el script del plugin
-            return "(_=>{ " + "if(!window['" + App.Name + "']) return; /**/ " + pluginScript + Environment.NewLine + " /**/ ;})();";
+            return "(_=>{ " + "if(!window['" + App.Name + "']) return; /**/ " + Environment.NewLine + pluginScript + Environment.NewLine + " /**/ ;})();";
         }
 
         #endregion

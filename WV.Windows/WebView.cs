@@ -13,6 +13,8 @@ namespace WV.Windows
 {
     public partial class WebView : IWebView
     {
+        private bool InnerIsMain { get; set; } = true;
+
         #region EVENTS
 
         public event EventHandler<IWebMessage> WebMessageReceived;
@@ -34,6 +36,8 @@ namespace WV.Windows
         public string UID { get; }
 
         public string? Uri => this.IsWV2Ready ? this.WV2.CoreWebView2.Source : null;
+
+        public bool IsMain { get; }
 
         public new bool IsActive => base.IsActive;
 
@@ -80,7 +84,7 @@ namespace WV.Windows
 
         #region PUBLIC PROPERTIES
 
-        public new string? Language { get; }
+        //public new string? Language { get; }
 
         public bool LocalServer { get; }
 
@@ -151,7 +155,7 @@ namespace WV.Windows
         public new string Title
         {
             get => base.Title;
-            set => base.Title = string.IsNullOrEmpty(value) ? base.Title : value;
+            set => base.Title = value == null ? base.Title : value;
         }
 
         private string? _Icon;
@@ -632,8 +636,13 @@ namespace WV.Windows
 
         #endregion
 
-        public WebView(Parameters parameters) : this()
+        public WebView(Parameters parameters, string[] args) : this(args)
         {
+            this.IsMain = InnerIsMain;
+
+            if (InnerIsMain)
+                InnerIsMain = false;
+                
             this.InnerParameters = parameters;
 
             this.UID = Guid.NewGuid().ToString();
@@ -642,7 +651,7 @@ namespace WV.Windows
             this.IndexPage = parameters.IndexPage;
             this.ErrorPage = parameters.ErrorPage;
             this.Domain = parameters.Domain;
-            this.Language = parameters.Language;
+            //this.Language = parameters.Language;
             this.LocalServer = parameters.LocalServer;
 
             AUX_SetParameters(parameters);

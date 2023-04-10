@@ -1,26 +1,35 @@
-﻿using WV;
+﻿using System.Reflection;
 using WV.WebView;
 
-namespace Essential
+namespace WV.Essential
 {
-    public class FileSystem : Plugin
+    public class FileSystem : Plugin, IPlugin
     {
+
+        public static string JScript => Resources.FileSystemScript;
 
         public FileSystem(IWebView webView) : base(webView)
         {
         }
 
         /// <summary>
-        /// Gets the current working directory of the application.
+        /// Gets the current working directory where application was launched.
         /// </summary>
         /// <returns></returns>
         public string CurrentDirectory => Directory.GetCurrentDirectory();
+
+
+        /// <summary>
+        /// Gets the current working directory of the application.
+        /// </summary>
+        public string? CurrentAppDirectory => Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
 
         /// <summary>
         /// Returns the path of the current user's temporary folder.
         /// </summary>
         /// <returns></returns>
         public string TempPath => Path.GetTempPath();
+
 
         /// <summary>
         /// Determines whether the specified file exists.

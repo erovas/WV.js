@@ -22,16 +22,21 @@ const NAME = '-Name-';
 const WV = WIN.chrome.webview;
 const HO = WV.hostObjects;
 const SYNC = HO.sync[HONAME];
-const ISFRAME = (_ => {
+const ISFRAME = SYNC.IsFrame;
+/*const ISFRAME = (_ => {
     try {
         return WIN.self !== WIN.top;
     } catch (e) {
         return true;
     }
 })();
+*/
 
 //Hacer que un Date() de js se convierta en DateTime() de c# cuando se le pasa a un HO
 HO.options.shouldSerializeDates = true;
+
+//Ignorar propiedades que NO existen en el plugin C#
+HO.options.ignoreMemberNotFoundError = true;
 
 // Para escuchar a SendMessageAsString() y SendMessageAsJson(), de un WebView y/o Frame
 (_ => {

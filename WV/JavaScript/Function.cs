@@ -4,6 +4,9 @@ namespace WV.JavaScript
 {
     public abstract class Function : Value
     {
+        protected bool _Async;
+        public bool Async => _Async;
+
         /// <summary>
         /// Execute function asynchronously
         /// </summary>

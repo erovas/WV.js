@@ -1,11 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Collections.Immutable;
-using System.Dynamic;
-using System.Linq;
-using System.Text;
+﻿using System.Collections.Immutable;
 using System.Text.Json;
-using System.Threading.Tasks;
 using WV.WebView;
 using WV.WebView.Entities;
 using WV.WebView.Enums;
@@ -16,9 +10,10 @@ namespace WV
     {
         private static Type? _WVType;
 
-        public static IWebView CreateInstance(Parameters? parameters)
+        public static IWebView CreateInstance(Parameters? parameters, string[]? args = null)
         {
             parameters ??= new Parameters();
+            args ??= Array.Empty<string>();
 
             if(_WVType == null)
             {
@@ -33,7 +28,7 @@ namespace WV
             if (_WVType == null)
                 throw new Exception("IWebView is not implemented");
 
-            object? value = Activator.CreateInstance(_WVType, new object[] { parameters });
+            object? value = Activator.CreateInstance(_WVType, new object[] { parameters, args });
 
             if (value == null)
                 throw new Exception("Impossible create instance");
@@ -46,7 +41,7 @@ namespace WV
             return CreateInstance(new Parameters());
         }
 
-        public static IWebView CreateInstance(string jsonParameters)
+        public static IWebView CreateInstance(string jsonParameters, string[]? args = null)
         {
             Parameters? parameters = null;
 
@@ -56,7 +51,7 @@ namespace WV
             }
             catch (Exception) { }
 
-            return CreateInstance(parameters);
+            return CreateInstance(parameters, args);
         }
 
         #region EVENTS
@@ -98,6 +93,14 @@ namespace WV
         /// Gets the URI of the current top level document.
         /// </summary>
         string? Uri { get; }
+
+        /// <summary>
+        /// Gets a value that indicates wheter this WebView is the main.
+        /// <para>
+        /// true if the Webview is the main Window
+        /// </para>
+        /// </summary>
+        bool IsMain { get; }
 
         /// <summary>
         /// Gets a value that indicates whether this WebView is active.
@@ -148,7 +151,7 @@ namespace WV
         /// <summary>
         /// 
         /// </summary>
-        string? Language { get; }
+        //string? Language { get; }
 
         /// <summary>
         /// 

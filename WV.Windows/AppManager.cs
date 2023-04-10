@@ -45,6 +45,10 @@ namespace WV.Windows
         /// </summary>
         public static List<string> JScripts { get; }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        public static string? Language { get; set; }
 
         static AppManager()
         {
@@ -55,9 +59,9 @@ namespace WV.Windows
             HostObjectName = "-_-" + Guid.NewGuid().ToString() + "-_-";
 
             string current = Directory.GetCurrentDirectory();
-            SrcPath = current + "/Src";
-            PluginsPath = current + "/Plugins";
-            UserDataPath = current + "/UserData";
+            SrcPath = current + "/src";
+            PluginsPath = current + "/plugins";
+            UserDataPath = current + "/userdata";
         }
 
     }

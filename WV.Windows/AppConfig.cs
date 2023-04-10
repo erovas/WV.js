@@ -1,5 +1,6 @@
 ﻿using System.Configuration;
 using System.IO;
+using System.Reflection;
 using System.Text.Json;
 using System.Windows.Shapes;
 using WV.WebView.Entities;
@@ -18,7 +19,8 @@ namespace WV.Windows
                     path += folderName;
             }
             else
-                path = Directory.GetCurrentDirectory() + "/" + folderName;
+                path = System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) + "/" + folderName;
+                //path = Directory.GetCurrentDirectory() + "/" + folderName;
 
             Directory.CreateDirectory(path);
             return path;
@@ -77,12 +79,12 @@ namespace WV.Windows
         { 
             get
             {
-                string? path = GetPath(GetString("plugins-path"), "Plugins");
+                string? path = GetPath(GetString("plugins-path"), "plugins");
                 return path;
             }
             set
             {
-                string? path = GetPath(value, "Plugins");
+                string? path = GetPath(value, "plugins");
                 SetString("plugins-path", path);
             }
         }
@@ -91,12 +93,12 @@ namespace WV.Windows
         {
             get
             {
-                string? path = GetPath(GetString("src-path"),"Src");
+                string? path = GetPath(GetString("src-path"), "src");
                 return path;
             }
             set
             {
-                string? path = GetPath(value, "Src");
+                string? path = GetPath(value, "src");
                 SetString("src-path", path);
             }
         }
@@ -105,12 +107,12 @@ namespace WV.Windows
         {
             get
             {
-                string? path = GetPath(GetString("user-data-path"), "UserData");
+                string? path = GetPath(GetString("user-data-path"), "userdata");
                 return path;
             }
             set
             {
-                string? path = GetPath(value, "UserData");
+                string? path = GetPath(value, "userdata");
                 SetString("user-data-path", path);
             }
         }

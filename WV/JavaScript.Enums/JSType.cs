@@ -26,6 +26,11 @@ namespace WV.JavaScript.Enums
         Function,
 
         /// <summary>
+        /// null - There is not equivalent
+        /// </summary>
+        AsyncFunction,
+
+        /// <summary>
         /// bool == Boolean
         /// </summary>
         Boolean,

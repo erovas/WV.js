@@ -1,23 +1,24 @@
 ﻿using WV;
 using WV.WebView;
 
-namespace Essential
+namespace WV.Essential
 {
-    public class Storage : Plugin
+    public class Storage : Plugin, IPlugin
     {
+        public static string JScript => Resources.StorageScript;
 
-        private Dictionary<string, string> Data { get; set; }
+        private Dictionary<string, object?> Data { get; set; }
 
         public Storage(IWebView webView) : base(webView)
         {
-            Data = App.Storage;
+            this.Data = App.Storage;
         }
 
         public int Count => this.Data.Count;
 
         public string[] Keys => this.Data.Keys.ToArray();
 
-        public string[] Values => this.Data.Values.ToArray();
+        public object?[] Values => this.Data.Values.ToArray();
 
         public void Clear()
         {
@@ -34,7 +35,7 @@ namespace Essential
         /// </summary>
         /// <param name="name"></param>
         /// <returns>Null if it does not exist</returns>
-        public string? Get(string name)
+        public object? Get(string name)
         {
             if (Exists(name))
                 return this.Data[name];
@@ -48,7 +49,7 @@ namespace Essential
         /// <param name="name"></param>
         /// <param name="value"></param>
         /// <returns>False if the key does not exist</returns>
-        public bool Set(string name, string value)
+        public bool Set(string name, object? value)
         {
             if (!Exists(name))
                 return false;
@@ -63,7 +64,7 @@ namespace Essential
         /// <param name="name"></param>
         /// <param name="value"></param>
         /// <returns>false if the key exists</returns>
-        public bool Add(string name, string value)
+        public bool Add(string name, object? value)
         {
             if (Exists(name))
                 return false;
@@ -87,6 +88,14 @@ namespace Essential
 
         protected override void Dispose(bool disposing)
         {
+            if (this.Disposed)
+                return;
+            
+            if (disposing)
+            {
+
+            }
+
             this.Data = null;
         }
     }

@@ -9,9 +9,12 @@ namespace WV.Windows.HostObject
         [ComVisible(false)]
         public Dictionary<JSEvent, Function> JSEvents { get; }
 
-        public HOWindows(IWebView webView) : base(webView, true)
+        public string[] Args { get; }
+
+        public HOWindows(IWebView webView, string[] args) : base(webView)
         {
             this.JSEvents = new Dictionary<JSEvent, Function>();
+            this.Args = args;
         }
 
         /// <summary>
@@ -21,22 +24,21 @@ namespace WV.Windows.HostObject
         /// <param name="fn"></param>
         public void AE(string jsEventName, object fn, string stringified)
         {
-            JSEvent jsEvent = JSEvent.state;
-
-            try
-            {
-                jsEvent = (JSEvent)Enum.Parse(typeof(JSEvent), jsEventName);
-            }
-            catch (Exception) { }
-
-            this.JSEvents[jsEvent] = new JavaScript.Function(fn, stringified);
+            if(Enum.TryParse(jsEventName, out JSEvent jsEvent))
+                this.JSEvents[jsEvent] = new JavaScript.Function(fn, stringified);
         }
 
-        [ComVisible(false)]
-        public override void Reloaded()
+        protected override void Dispose(bool disposing)
         {
-            base.Reloaded();
-            this.JSEvents.Clear();
+            if(this.Disposed)
+                return;
+
+            if (disposing)
+            {
+
+            }
+
+            this.JSEvents?.Clear();
         }
 
     }

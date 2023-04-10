@@ -1,10 +1,10 @@
 {
-  "Plugins": [ "Window", "Storage", "FileSystem" ],
+  "Plugins": [ "Window", "Storage", "FileSystem", "SerialPort", "Ports", "SQLite" ],
+  "Language": null,
   "Parameters": {
-    "Language": null,
     "LocalServer": true,
     "Domain": null,
-    "IndexPage": null,
+    "IndexPage": "D:/Documents/Proyectos VS2022/WV.js/WV.Windows/bin/Debug/net7.0-windows/src/index.html",
     "ErrorPage": null,
     "EnableFramePlugins": false,
     "EnablePlugins": true,

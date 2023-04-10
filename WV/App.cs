@@ -1,5 +1,4 @@
-﻿using System.Collections.Immutable;
-using System.Runtime.InteropServices;
+﻿using System.Runtime.InteropServices;
 
 namespace WV
 {
@@ -28,7 +27,7 @@ namespace WV
         /// <summary>
         /// Application storage
         /// </summary>
-        public static Dictionary<string, string> Storage { get; }
+        public static Dictionary<string, object?> Storage { get; }
 
         /// <summary>
         /// 
@@ -51,7 +50,7 @@ namespace WV
                 platform = OSPlatform.OSX.ToString();
 
             Platform = platform;
-            Storage = new Dictionary<string, string>();
+            Storage = new Dictionary<string, object?>();
             ConfigFilePath = Directory.GetCurrentDirectory() + "/config.json";
         }
     }
