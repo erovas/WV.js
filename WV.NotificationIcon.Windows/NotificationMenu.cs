@@ -32,6 +32,32 @@ namespace WV.NotificationIcon.Windows
             this.InnerMenu = menu;
             this.BackColor = new Color(menu);
             this.ForeColor = new Color(menu, true);
+
+            menu.AllowTransparency = true;
+            menu.AutoClose = true;
+            menu.BackgroundImage = null;
+            int bottom = menu.Bottom;
+            //menu.Bounds
+            menu.Click += Menu_Click;
+            menu.DoubleClick += Menu_DoubleClick;
+            menu.Enabled = true;
+            menu.Height = bottom;
+            //menu.Items
+            menu.Left = 0;
+            //menu.Right;
+            //menu.Opacity 
+            menu.Visible = true;
+            
+        }
+
+        private void Menu_DoubleClick(object? sender, EventArgs e)
+        {
+            throw new NotImplementedException();
+        }
+
+        private void Menu_Click(object? sender, EventArgs e)
+        {
+            throw new NotImplementedException();
         }
 
         protected override void Dispose(bool disposing)

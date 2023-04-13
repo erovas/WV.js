@@ -166,6 +166,7 @@ namespace WV.Windows
             {
                 try
                 {
+                    value = value ?? string.Empty;
                     base.Icon = System.Windows.Media.Imaging.BitmapFrame.Create(new Uri(value, UriKind.RelativeOrAbsolute));
                     _Icon = value;
                 }
@@ -203,7 +204,7 @@ namespace WV.Windows
                 if (value)
                     this.Background = System.Windows.Media.Brushes.Transparent;
                 else
-                    this.Background = (SolidColorBrush)new BrushConverter().ConvertFrom("#01000000");
+                    this.Background = new BrushConverter().ConvertFrom("#01000000") as SolidColorBrush;
             }
         }
 
@@ -269,7 +270,7 @@ namespace WV.Windows
                         _watcher.IncludeSubdirectories = true;
                         _watcher.EnableRaisingEvents = true;
                     }
-                    catch (Exception ex)
+                    catch (Exception)
                     {
                         _watcher = null;
                     }
@@ -666,7 +667,7 @@ namespace WV.Windows
 
             if (this.AllowDrag)
             {
-                SynchronizationContext.Current.Post(x => {
+                SynchronizationContext.Current?.Post(x => {
                     User32.ReleaseCapture();
                     User32.SendMessage(this.InnerHandle, WindowsMessages.WM_NCLBUTTONDOWN, WM_NCHitTest.HTCAPTION, 0);
                 }, null);
@@ -678,7 +679,7 @@ namespace WV.Windows
             if (this.IsFullScreen)
                 return;
 
-            SynchronizationContext.Current.Post(x => {
+            SynchronizationContext.Current?.Post(x => {
                 User32.ReleaseCapture();
                 User32.SendMessage(this.InnerHandle, WindowsMessages.WM_NCLBUTTONDOWN, WM_NCHitTest.HTTOPLEFT, 0);
             }, null);
@@ -689,7 +690,7 @@ namespace WV.Windows
             if (this.IsFullScreen)
                 return;
 
-            SynchronizationContext.Current.Post(x => {
+            SynchronizationContext.Current?.Post(x => {
                 User32.ReleaseCapture();
                 User32.SendMessage(this.InnerHandle, WindowsMessages.WM_NCLBUTTONDOWN, WM_NCHitTest.HTTOPRIGHT, 0);
             }, null);
@@ -700,7 +701,7 @@ namespace WV.Windows
             if (this.IsFullScreen)
                 return;
 
-            SynchronizationContext.Current.Post(x => {
+            SynchronizationContext.Current?.Post(x => {
                 User32.ReleaseCapture();
                 User32.SendMessage(this.InnerHandle, WindowsMessages.WM_NCLBUTTONDOWN, WM_NCHitTest.HTBOTTOMLEFT, 0);
             }, null);
@@ -711,7 +712,7 @@ namespace WV.Windows
             if (this.IsFullScreen)
                 return;
 
-            SynchronizationContext.Current.Post(x => {
+            SynchronizationContext.Current?.Post(x => {
                 User32.ReleaseCapture();
                 User32.SendMessage(this.InnerHandle, WindowsMessages.WM_NCLBUTTONDOWN, WM_NCHitTest.HTBOTTOMRIGHT, 0);
             }, null);
@@ -722,7 +723,7 @@ namespace WV.Windows
             if (this.IsFullScreen)
                 return;
 
-            SynchronizationContext.Current.Post(x => {
+            SynchronizationContext.Current?.Post(x => {
                 User32.ReleaseCapture();
                 User32.SendMessage(this.InnerHandle, WindowsMessages.WM_NCLBUTTONDOWN, WM_NCHitTest.HTLEFT, 0);
             }, null);
@@ -733,7 +734,7 @@ namespace WV.Windows
             if (this.IsFullScreen)
                 return;
 
-            SynchronizationContext.Current.Post(x => {
+            SynchronizationContext.Current?.Post(x => {
                 User32.ReleaseCapture();
                 User32.SendMessage(this.InnerHandle, WindowsMessages.WM_NCLBUTTONDOWN, WM_NCHitTest.HTRIGHT, 0);
             }, null);
@@ -744,7 +745,7 @@ namespace WV.Windows
             if (this.IsFullScreen)
                 return;
 
-            SynchronizationContext.Current.Post(x => {
+            SynchronizationContext.Current?.Post(x => {
                 User32.ReleaseCapture();
                 User32.SendMessage(this.InnerHandle, WindowsMessages.WM_NCLBUTTONDOWN, WM_NCHitTest.HTTOP, 0);
             }, null);
@@ -755,7 +756,7 @@ namespace WV.Windows
             if (this.IsFullScreen)
                 return;
 
-            SynchronizationContext.Current.Post(x => {
+            SynchronizationContext.Current?.Post(x => {
                 User32.ReleaseCapture();
                 User32.SendMessage(this.InnerHandle, WindowsMessages.WM_NCLBUTTONDOWN, WM_NCHitTest.HTBOTTOM, 0);
             }, null);
@@ -928,7 +929,7 @@ namespace WV.Windows
 
         public new void Show()
         {
-            SynchronizationContext.Current.Post(x => {
+            SynchronizationContext.Current?.Post(x => {
                 try
                 {
                     base.Show();
@@ -940,7 +941,7 @@ namespace WV.Windows
 
         public new void ShowDialog()
         {
-            SynchronizationContext.Current.Post(x => {
+            SynchronizationContext.Current?.Post(x => {
                 try
                 {
                     base.ShowDialog();
@@ -977,7 +978,7 @@ namespace WV.Windows
 
         public Task<string> ExecuteScriptAsync(string javaScript)
         {
-            return this.WV2?.ExecuteScriptAsync(javaScript);
+            return this.WV2.ExecuteScriptAsync(javaScript);
         }
 
         public void SendMessageAsJson(string messageAsJson)

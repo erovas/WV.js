@@ -1,5 +1,6 @@
 ﻿// See https://aka.ms/new-console-template for more information
 using System.Collections.Immutable;
+using System.Runtime.InteropServices;
 using System.Text.Json;
 using TestingThings;
 
@@ -62,5 +63,14 @@ string jsonString = JsonSerializer.Serialize(data);
 Uri uri1 = new Uri("C:/test/path/file.txt"); // Implicit file path.
 Uri uri2 = new Uri("file:///C:/test/path/file.txt"); // Explicit file path.
 Uri uri3 = new Uri("C:/test/path/"); // Implicit file path.
+
+
+//Notify<List<string>> prueba = new Notify<List<string>>("hola");
+
+var prueba = new Notify<Exception>();
+
+prueba = new Notify<Exception>(new Exception("aswdasdasd"));
+
+var prueba2 = new Notify<int>();
 
 Console.ReadLine();

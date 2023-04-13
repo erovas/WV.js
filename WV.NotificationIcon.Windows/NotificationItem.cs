@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Runtime.InteropServices;
 using WV.WebView;
 using WV.JavaScript;
 
@@ -19,9 +14,11 @@ namespace WV.NotificationIcon.Windows
 
         private Function? InnerFNOnClick { get; set; }
         private Function? InnerFNOnDoubleClick { get; set; }
+        private Function? InnerFNOnChecked { get; set; }
 
         private List<Function> InnerFNClick { get; } = new List<Function>();
         private List<Function> InnerFNDoubleClick { get; } = new List<Function>();
+        private List<Function> InnerFNChecked { get; } = new List<Function>();
 
         #endregion
 
@@ -139,7 +136,6 @@ namespace WV.NotificationIcon.Windows
             //item.ShortcutKeys = Keys.NumPad1;
             
             //item.Name = string.Empty;            
-
         }
 
         #region EVENTS
@@ -161,6 +157,10 @@ namespace WV.NotificationIcon.Windows
                     this.InnerFNDoubleClick.Add(listener);
                     break;
 
+                case Utils.CHECKED_CHANGED:
+                    this.InnerFNChecked.Add(listener);
+                    break;
+
                 default:
                     throw new Exception("Event ['" + type + "'] not exists");
             }
@@ -176,6 +176,7 @@ namespace WV.NotificationIcon.Windows
             {
                 Utils.CLICK => this.InnerFNClick,
                 Utils.DOUBLE_CLICK => this.InnerFNDoubleClick,
+                Utils.CHECKED_CHANGED => this.InnerFNChecked,
                 _ => throw new Exception("Event ['" + type + "'] not exists"),
             };
             Utils.RemoveInList(list, listener);
@@ -203,6 +204,16 @@ namespace WV.NotificationIcon.Windows
             }
         }
 
+        public Function? oncheckedchanged
+        {
+            get => this.InnerFNOnChecked;
+            set
+            {
+                removeEventListener(Utils.CHECKED_CHANGED, this.InnerFNOnChecked);
+                addEventListener(Utils.CHECKED_CHANGED, value);
+                this.InnerFNOnChecked = value;
+            }
+        }
 
         #endregion
 
@@ -226,7 +237,10 @@ namespace WV.NotificationIcon.Windows
 
         private void Item_CheckedChanged(object? sender, EventArgs e)
         {
-            throw new NotImplementedException();
+            CursorUtil cursor = new(e);
+
+            foreach (var item in this.InnerFNChecked)
+                item.Execute(this, cursor.X, cursor.Y, cursor.Button);
         }
 
         #endregion

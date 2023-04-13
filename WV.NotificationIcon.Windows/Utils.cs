@@ -12,6 +12,7 @@ namespace WV.NotificationIcon.Windows
     {
         public const string CLICK = "click";
         public const string DOUBLE_CLICK = "doubleclick";
+        public const string CHECKED_CHANGED = "checkedchanged";
 
         public static void RemoveInList(List<Function> list, Function? fn)
         {

@@ -15,8 +15,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\WV.Windows.Constants\WV.Windows.Constants.csproj" />
-    <ProjectReference Include="..\WV.Windows.Utils\WV.Windows.Utils.csproj" />
     <ProjectReference Include="..\WV\WV.csproj" />
   </ItemGroup>
 

@@ -127,7 +127,7 @@ namespace WV.Windows
                         string configString = File.ReadAllText(App.ConfigFilePath);
                         appConfig.Config = JsonSerializer.Deserialize<Config>(configString) ?? appConfig.Config;
                     }
-                    catch (Exception ex)
+                    catch (Exception)
                     {
                         appConfig.Config = appConfig.Config;
                     }
@@ -151,7 +151,7 @@ namespace WV.Windows
                     string configString = File.ReadAllText(App.ConfigFilePath);
                     appConfig.Config = JsonSerializer.Deserialize<Config>(configString) ?? appConfig.Config;
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
                     appConfig.Config = appConfig.Config;
                 }
