@@ -1,5 +1,5 @@
 # WV.js
-JavaScript framework to build desktop applications with simple html, css and js, without node.js dependency
+WV.js is a framework to build desktop applications with simple html, css and js, without node.js dependency.
 
 ## Compatibility
 
