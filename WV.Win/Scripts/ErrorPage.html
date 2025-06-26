@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<!-- https://codepen.io/anna_blok/pen/KKpwRVe -->
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WV.js</title>
+    <style>
+        html, body {
+            padding: 0;
+            margin: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        body {
+            text-align: center;
+            background-color: #222;
+            color: #fff;
+            font-family: 'Quicksand', sans-serif;
+            line-height: 1.5;
+        }
+
+        a {
+            color: #fff;
+            text-decoration: none;
+        }
+
+        .popup {
+            position: fixed;
+            padding: 10px;
+            max-width: 500px;
+            border-radius: 0.5em;
+            top: 50%;
+            left: 50%;
+            color: #000;
+            transform: translate(-50%, -50%);
+            background-color: rgba(255,255,255,1);
+            transition: opacity .5s, visibility 0s linear .5s;
+            z-index: 1;
+            visibility: visible;
+            opacity: 1;
+            transition-delay: 0s;
+        }
+
+        .popup .close {
+            position: absolute;
+            right: 5px;
+            top: 5px;
+            padding: 5px;
+            color: #000;
+            transition: color .3s;
+            font-size: 2em;
+            line-height: 1.5;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .popup .close:hover {
+            color: #f00;
+        }
+
+        .close-popup {
+            background-color: rgba(0,0,0,.7);
+            cursor: default;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity .5s, visibility 0s linear .5s;
+        }
+
+        .popup:target + .close-popup {
+            opacity: 1;
+            visibility: visible;
+            transition-delay: 0s;
+        }
+
+        #drag {
+            cursor: grab
+        }
+
+        #drag:active {
+            cursor: grabbing
+        }
+    </style>
+</head>
+<body>
+    <div id="popup" class="popup">
+        <span id="close" class="close">&times;</span>
+        <h2 id="drag">Error</h2>
+        <p id="Message">texto</p>
+    </div>
+    <script>
+
+        const WV = window.WebView.Sync;
+        const WVWin = WV.Window;
+        const Rect = WVWin.Rect;
+
+        WVWin.AllowSnap = false;
+
+        // Evitar desplegar el ContextMenu nativo del WebView
+        window.oncontextmenu = e => {
+            e.preventDefault();
+            return false;
+        }
+
+        Rect.Width = 800;
+        Rect.Height = 600;
+
+        const Message = document.getElementById("Message");
+        Message.innerText = `-replace-`;
+
+        window.onload = e => {
+            /** @type {HTMLH2Element} */
+            const TitleBar = document.getElementById("drag");
+
+            TitleBar.onmousedown = e => {
+                if (e.button == 0)
+                    WVWin.Drag();
+            }
+
+            /** @type {HTMLSpanElement} */
+            const btnClose = document.getElementById("close");
+            btnClose.onclick = e => WVWin.Close();
+
+
+
+            /** @type {HTMLDivElement} */
+            const Popup = document.getElementById("popup");
+            const Width = Popup.clientWidth;
+            const Height = Popup.clientHeight;
+
+            Rect.Width = Width;
+            Rect.Height = Height;
+
+            Rect.MinWidth = Width;
+            Rect.MinHeight = Height;
+
+            Rect.MaxWidth = Width;
+            Rect.MaxHeight = Height;
+
+            Rect.X = 100;
+            Rect.Y = 100;
+
+            Popup.style.width = (Width - 20) + "px";
+
+            WVWin.Show();
+        }
+    </script>
+</body>
+</html>
