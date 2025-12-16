@@ -1065,7 +1065,7 @@ namespace WV.Win.Imp
                     else
                         User32.DestroyWindow(hWnd);
 
-                    break;
+                    return IntPtr.Zero;
 
                 case WinMsg.WM_DESTROY:
                     this.WV.Dispose();
