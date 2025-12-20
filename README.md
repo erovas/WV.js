@@ -162,6 +162,30 @@ IContextMenu
 | `CreateContextItem(name, kind, icon = null, callback = null)`               | Create an IContextMenuItem instance. name = text to show; Kind = "Command", "CheckBox", "Radio", "Separator", "Submenu"; icon = Absolute or relative path to icon; callback = function(kind, checked)  |
 | `CreateContextItemSeparator()`  | Create an IContextMenuItem instance as separator. |
 | `AddItem(item)`       | Add the item at the end. |
+| `InsertItem(index, item)`       | Insert the item at the specified position. |
 | `RemoveItem(item)`  | Removes the item. Return true if removed. |
 | `RemoveItemAt(index)`| Removes the item to the specified position. |
 | `Clear()`| Remove all items. |
+
+
+IContextMenuItem
+
+| Property       | Description                                                                                             |
+|--------------------------|---------------------------------------------------------------------------------------------------------|
+| `Name`               | Gets text to show. |
+| `kind`               | Gets kind. "Command", "CheckBox", "Radio", "Separator", "Submenu". |
+| `Icon`      | Gets absolute or relative path to icon. |
+| `Parent`  | It is different from null if the item belongs to a submenu. |
+| `Children`  | Gets the items contained in this item as static array. |
+| `Checked`               | Gets or sets checked. For "CheckBox" or "Radio" |
+| `Enabled`               | Gets or sets enable. |
+| `Visible`               | Gets or sets visibility. |
+| `Callback`               | Gets or sets callback function. |
+
+| Method       | Description                                                                                             |
+|--------------------------|---------------------------------------------------------------------------------------------------------|
+| `AddItem(item)`       | Add the item to the end of the submenu. |
+| `InsertItem(index, item)`       | Insert the item at the specified position of the submenu. |
+| `RemoveItem(item)`  | Removes the item of the submenu. Return true if removed. |
+| `RemoveItemAt(index)`| Removes the item to the specified position of the submenu. |
+| `Clear()`| Remove all items of the submenu. |
