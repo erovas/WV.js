@@ -146,3 +146,22 @@ IBrowser
 | `MutedEvent, OnMuted`  | Muted Event. It is triggered when the browser is muted or unmute. (boolean) == (muted) |
 | `ZoomFactorChanged, OnZoomFactorChanged` | ZoomFactor changed event (number) == (zoomFactor)|
 | `StatusBarTextChanged, OnStatusBarTextChanged`| StatusBarTextChanged event. (string) == (statusBarText)|
+
+
+IContextMenu
+
+| Property       | Description                                                                                             |
+|--------------------------|---------------------------------------------------------------------------------------------------------|
+| `Enable`               | Enable or disable context menu. |
+| `Children`               | Gets all cotext menu items. [...IContextMenuItem] |
+| `ShowNativeItems`      | Enable or disable native items. |
+| `EmojiItem, UndoItem, RedoItem, CutItem, CopyItem, PasteItem, PasteAndMatchStyleItem, SelectAllItem, WritingDirectionItem, ShareItem, WebCaptureItem, LoopItem, ShowAllControlsItem, SaveMediaAsItem, CopyLinkItem, CopyLinkToHighlightItem, PrintItem, BackItem, ForwardItem, ReloadItem, SaveAsItem, SaveImageAsItem, CopyImageItem, CopyImageLocationItem, MagnifyImageItem, SaveFrameAsItem, CopyVideoFrameItem, PictureInPictureItem, SaveLinkAsItem, OpenLinkInNewWindowItem`  | Enable or disable individual native item. |
+
+| Method       | Description                                                                                             |
+|--------------------------|---------------------------------------------------------------------------------------------------------|
+| `CreateContextItem(name, kind, icon = null, callback = null)`               | Create an IContextMenuItem instance. name = text to show; Kind = "Command", "CheckBox", "Radio", "Separator", "Submenu"; icon = Absolute or relative path to icon; callback = function(kind, checked)  |
+| `CreateContextItemSeparator()`  | Create an IContextMenuItem instance as separator. |
+| `AddItem(item)`       | Add the item at the end. |
+| `RemoveItem(item)`  | Removes the item. Return true if removed. |
+| `RemoveItemAt(index)`| Removes the item to the specified position. |
+| `Clear()`| Remove all items. |
