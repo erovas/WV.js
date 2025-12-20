@@ -7,16 +7,22 @@ namespace WV.Interfaces
         #region PROPS
 
         /// <summary>
-        /// Enable or disable context menu
+        /// Enable or disable context menu.
         /// </summary>
         bool Enable {  get; set; }
 
+        /// <summary>
+        /// Gets all cotext menu items.
+        /// </summary>
         IContextMenuItem[] Children { get; }
 
         #endregion
 
         #region PROPS Native Items
 
+        /// <summary>
+        /// Enable or disable native items.
+        /// </summary>
         bool ShowNativeItems { get; set; }
 
         bool EmojiItem { get; set; }
@@ -91,18 +97,50 @@ namespace WV.Interfaces
 
         #region METHODS
 
-        IContextMenuItem CreateContextItem(string name, string kind, string? icon = null, object? callback = null);
+        /// <summary>
+        /// Create an IContextMenuItem instance.
+        /// </summary>
+        /// <param name="label"></param>
+        /// <param name="kind">"Command", "CheckBox", "Radio", "Separator", "Submenu"</param>
+        /// <param name="icon">Absolute o relative path to icon</param>
+        /// <param name="callback"></param>
+        /// <returns></returns>
+        IContextMenuItem CreateContextItem(string label, string kind, string? icon = null, object? callback = null);
 
+        /// <summary>
+        /// Create an IContextMenuItem instance as separator.
+        /// </summary>
+        /// <returns></returns>
         IContextMenuItem CreateContextItemSeparator();
 
+        /// <summary>
+        /// Add the item at the end.
+        /// </summary>
+        /// <param name="item"></param>
         void AddItem(IContextMenuItem item);
 
+        /// <summary>
+        /// Insert the item at the specified position.
+        /// </summary>
+        /// <param name="index"></param>
+        /// <param name="item"></param>
         void InsertItem(int index, IContextMenuItem item);
 
-        void RemoveItem(IContextMenuItem item);
+        /// <summary>
+        /// Removes the item.
+        /// </summary>
+        /// <param name="item"></param>
+        bool RemoveItem(IContextMenuItem item);
 
+        /// <summary>
+        /// Removes the item to the specified position.
+        /// </summary>
+        /// <param name="index"></param>
         void RemoveItemAt(int index);
 
+        /// <summary>
+        /// Remove all items.
+        /// </summary>
         void Clear();
 
         #endregion

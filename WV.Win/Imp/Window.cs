@@ -699,7 +699,7 @@ namespace WV.Win.Imp
 
         private IJSFunction? OnCloseFN { get; set; }
 
-        public object? OnClose
+        public object? OnClosing
         {
             get
             {

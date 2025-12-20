@@ -11,7 +11,7 @@ namespace WV.Interfaces
         event WVEventHandler<WindowState, string> StateChanged;
 
         /// <summary>
-        /// Close event C#.
+        /// Close event.
         /// </summary>
         event WVEventHandler Closing;
 
@@ -45,14 +45,14 @@ namespace WV.Interfaces
         /// </summary>
         event WVSysEventHandler Raw;
 
+        #region PROPS
+
         /// <summary>
         /// Gets a Rect object.
         /// </summary>
         IRect Rect { get; }
 
         //-------------------------------------------//
-
-        #region PROPS
 
         /// <summary>
         /// Gets or sets windows state.
@@ -220,7 +220,7 @@ namespace WV.Interfaces
         /// <summary>
         /// State changed event JS.
         /// </summary>
-        object? OnStateChanged { get; set; }
+        //object? OnStateChanged { get; set; }
 
         /// <summary>
         /// Close event JS
@@ -228,36 +228,46 @@ namespace WV.Interfaces
         /// fired when the PreventClose property is true.
         /// </para>
         /// </summary>
-        object? OnClose { get; set; }
+        //object? OnClosing { get; set; }
 
         /// <summary>
         /// Position changed event JS.
         /// </summary>
-        object? OnPositionChanged { get; set; }
+        //object? OnPositionChanged { get; set; }
 
         /// <summary>
         /// Activated event JS.
         /// </summary>
-        object? OnActivated { get; set; }
+        //object? OnActivated { get; set; }
+
+        /// <summary>
+        /// Enabled event JS.
+        /// </summary>
+        //public object? OnEnabled { get; set; }
 
         /// <summary>
         /// Visible event JS.
         /// </summary>
-        object? OnVisible { get; set; }
+        //object? OnVisible { get; set; }
+
+        /// <summary>
+        /// Size Changed event JS.
+        /// </summary>
+        //public object? OnSizeChanged { get; set; }
 
         /// <summary>
         /// Appends an event listener for events whose type attribute value is type.
         /// </summary>
         /// <param name="type"></param>
         /// <param name="callback"></param>
-        void AddEventListener(string type, object callback);
+        //void AddEventListener(string type, object callback);
 
         /// <summary>
         /// Removes the event listener in target's event listener list with the same type and callback.
         /// </summary>
         /// <param name="type"></param>
         /// <param name="callback"></param>
-        void RemoveEventListener(string type, object callback);
+        //void RemoveEventListener(string type, object callback);
 
         #endregion
 

@@ -7,71 +7,71 @@ namespace WV.Interfaces
     {
         event WVEventHandler<PrintStatus, string> PrintFinished;
 
-        /// <summary>
-        /// Gets a value indicating that the printmanager is printing
-        /// </summary>
-        bool IsBusy { get; }
-
         #region PROPS
 
         /// <summary>
-        /// Print orientation
+        /// Gets a value indicating that the printmanager is printing.
+        /// </summary>
+        bool IsBusy { get; }
+
+        /// <summary>
+        /// Gets or sets Print orientation.
         /// </summary>
         PrintOrientation Orientation { get; set; }
 
         /// <summary>
-        /// Print orientation
+        /// Gets or sets Print orientation as text.
         /// </summary>
         string OrientationText { get; set; }
 
         /// <summary>
-        /// The bottom margin in centimeters. The default is 1 cm.
+        /// Gets or sets the bottom margin in centimeters. The default is 1 cm.
         /// </summary>
         double MarginBottom { get; set; }
 
         /// <summary>
-        /// The left margin in centimeters. The default is 1 cm.
+        /// Gets or sets the left margin in centimeters. The default is 1 cm.
         /// </summary>
         double MarginLeft { get; set; }
 
         /// <summary>
-        /// The right margin in centimeters. The default is 1 cm.
+        /// Gets or sets the right margin in centimeters. The default is 1 cm.
         /// </summary>
         double MarginRight { get; set; }
 
         /// <summary>
-        /// The top margin in centimeters. The default is 1 cm.
+        /// Gets or sets the top margin in centimeters. The default is 1 cm.
         /// </summary>
         double MarginTop { get; set; }
 
         /// <summary>
-        /// The page width in centimeters. The default width is 21 cm.
+        /// Gets or sets the page width in centimeters. The default width is 21 cm.
         /// </summary>
         double PageWidth { get; set; }
 
         /// <summary>
-        /// The page height in centimeters. The default height is 29.7 cm.
+        /// Gets or sets the page height in centimeters. The default height is 29.7 cm.
         /// </summary>
         double PageHeight { get; set; }
 
         /// <summary>
-        /// The scale factor is a value between 0.1 and 2.0. The default is 1.
+        /// Gets or sets the scale factor is a value between 0.1 and 2.0. The default is 1.
         /// </summary>
         double ScaleFactor { get; set; }
 
         /// <summary>
-        /// true if background colors and images should be printed. The default value is false.
+        /// True if background colors and images should be printed. The default value is false.
         /// </summary>
         bool PrintBackgrounds { get; set; }
 
         /// <summary>
-        /// true if only the current end user's selection of HTML in the document should be printed.
+        /// True if only the current end user's selection of HTML in the document should be printed.
         /// The default value is false.
         /// </summary>
         bool PrintSelectionOnly { get; set; }
 
         /// <summary>
-        /// true if header and footer should be printed. The default value is false.
+        /// True if header and footer should be printed. The default value is false.
         /// <para>
         /// The header consists of the date and time of printing, and the title of the page. 
         /// The footer consists of the URI and page number. The height of the header and footer is 0.5 cm
@@ -80,7 +80,7 @@ namespace WV.Interfaces
         bool PrintHeaderAndFooter { get; set; }
 
         /// <summary>
-        /// The URI in the footer if PrintHeaderAndFooter is true. The default value is the current URI.
+        /// Gets or sets the URI in the footer if PrintHeaderAndFooter is true. The default value is the current URI.
         /// <para>
         /// If an empty string or null value is provided, no URI is shown in the footer.
         /// </para>
@@ -88,7 +88,7 @@ namespace WV.Interfaces
         string FooterUri { get; set; }
 
         /// <summary>
-        /// Page range to print. Defaults to empty string, which means print all pages.
+        /// Gets or sets the page range to print. Defaults to empty string, which means print all pages.
         /// <para>
         /// The PageRanges property is a list of page ranges specifying one or more pages
         /// that should be printed separated by commas. Any whitespace between page ranges
@@ -124,13 +124,13 @@ namespace WV.Interfaces
         string PageRanges { get; set; }
 
         /// <summary>
-        /// Number of copies to print. Minimum value is 1 and the maximum copies count is 999.
+        /// Gets or sets number of copies to print. Minimum value is 1 and the maximum copies count is 999.
         /// The default value is 1.
         /// </summary>
         int Copies { get; set; }
 
         /// <summary>
-        /// Prints multiple pages of a document on a single piece of paper. Choose from 1, 2, 4, 6, 9 or 16.
+        /// Gets or sets prints multiple pages of a document on a single piece of paper. Choose from 1, 2, 4, 6, 9 or 16.
         /// The default value is 1.
         /// </summary>
         int PagesPerSide { get; set; }
@@ -213,8 +213,22 @@ namespace WV.Interfaces
         #endregion
 
         /// <summary>
-        /// PrintFinished event
+        /// PrintFinished event.
         /// </summary>
-        object? OnPrintFinished { get; set; }
+        //object? OnPrintFinished { get; set; }
+
+        /// <summary>
+        /// Appends an event listener for events whose type attribute value is type.
+        /// </summary>
+        /// <param name="type"></param>
+        /// <param name="callback"></param>
+        //void AddEventListener(string type, object callback);
+
+        /// <summary>
+        /// Removes the event listener in target's event listener list with the same type and callback.
+        /// </summary>
+        /// <param name="type"></param>
+        /// <param name="callback"></param>
+        //void RemoveEventListener(string type, object callback);
     }
 }

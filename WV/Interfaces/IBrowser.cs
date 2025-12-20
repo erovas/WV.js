@@ -33,7 +33,7 @@ namespace WV.Interfaces
         string Uri { get; }
 
         /// <summary>
-        /// Enable or disable automatic browser reloading, use it during development
+        /// Enable or disable automatic browser reloading, use it during development. Default value is false.
         /// </summary>
         bool HotReload { get; set; }
 
@@ -105,17 +105,17 @@ namespace WV.Interfaces
         double ZoomFactor { get; set; }
 
         /// <summary>
-        /// Gets maximum ZommFactor
+        /// Gets maximum ZommFactor.
         /// </summary>
         public double MaxZoomFactor { get; }
 
         /// <summary>
-        /// Gets minimum ZoomFactor
+        /// Gets minimum ZoomFactor.
         /// </summary>
         public double MinZoomFactor { get; }
 
         /// <summary>
-        /// When WebView is reload, reset all settings to default
+        /// When WebView is reload, reset all settings to default. Default value is false.
         /// </summary>
         bool ResetWebViewOnReload { get; set; }
 
@@ -132,22 +132,22 @@ namespace WV.Interfaces
         bool Muted { get; set; }
 
         /// <summary>
-        /// Get last status bar text
+        /// Get last status bar text.
         /// </summary>
         string StatusBarText { get; }
 
         /// <summary>
-        /// Get current language
+        /// Get current language.
         /// </summary>
         string Language { get; }
 
         /// <summary>
-        /// Get or set browser color scheme
+        /// Get or set browser color scheme.
         /// </summary>
         BrowserColorScheme ColorScheme { get; set; }
 
         /// <summary>
-        ///  Gets or sets the browser's color scheme by text
+        /// Gets or sets the browser's color scheme by text.
         /// </summary>
         string ColorSchemeText { get; set; }
 
@@ -158,27 +158,27 @@ namespace WV.Interfaces
         #region METHODS
 
         /// <summary>
-        /// Open developer tools [DevTools]
+        /// Open developer tools [DevTools].
         /// </summary>
         void OpenDevTools();
 
         /// <summary>
-        /// Navigate to a specific URI
+        /// Navigate to a specific URI.
         /// </summary>
         void Navigate(string uri);
 
         /// <summary>
-        /// Reload the page
+        /// Reload the page.
         /// </summary>
         void Reload();
 
         /// <summary>
-        /// Reload the page avoiding the cache
+        /// Reload the page avoiding the cache.
         /// </summary>
         void HardReload();
 
         /// <summary>
-        /// Runs JavaScript code from the javaScript parameter in the current WebView
+        /// Runs JavaScript code from the javaScript parameter in the current WebView.
         /// </summary>
         /// <param name="javaScript"></param>
         Task<string>? ExecuteScriptAsync(string javaScript);
@@ -202,36 +202,36 @@ namespace WV.Interfaces
         /// <summary>
         /// Playing Audio event JS.
         /// </summary>
-        object? OnPlayingAudio { get; set; }
+        //object? OnPlayingAudio { get; set; }
 
         /// <summary>
         /// Muted Event JS.
         /// </summary>
-        object? OnMuted {  get; set; }
+        //object? OnMuted {  get; set; }
 
         /// <summary>
         /// ZoomFactor changed event JS.
         /// </summary>
-        object? OnZoomFactorChanged { get; set; }
+        //object? OnZoomFactorChanged { get; set; }
 
         /// <summary>
         /// StatusBarTextChanged event JS 
         /// </summary>
-        object? OnStatusBarTextChanged { get; set; }
+        //object? OnStatusBarTextChanged { get; set; }
 
         /// <summary>
         /// Appends an event listener for events whose type attribute value is type.
         /// </summary>
         /// <param name="type"></param>
         /// <param name="listener"></param>
-        void AddEventListener(string type, object listener);
+        //void AddEventListener(string type, object listener);
 
         /// <summary>
         /// Removes the event listener in target's event listener list with the same type and callback.
         /// </summary>
         /// <param name="type"></param>
         /// <param name="listener"></param>
-        void RemoveEventListener(string type, object listener);
+        //void RemoveEventListener(string type, object listener);
 
         #endregion
 
