@@ -6,3 +6,233 @@ WV.js is a framework to build desktop applications with simple html, css and js,
 For Windows 10 or higher.
 
 ## How to use?
+
+``` html
+<script src="script.js"></script>
+```
+
+### API
+IWebView
+
+| Property       | Description                                                                                             |
+|--------------------------|---------------------------------------------------------------------------------------------------------|
+| `UID`               | Gets a value that identify this WebView |
+| `Name`               | Plugin name |
+| `Window`              | Gets a IWindow instance |
+| `Browser`  | Gets a IBrowser instance |
+| `PrintManager`| Return IPrintManager instance |
+
+| Method       | Description                                                                                             |
+|--------------------------|---------------------------------------------------------------------------------------------------------|
+| `LoadPluginsFromFolder(folderPath = "")`               | If the parameter is not set, all plugins will be loaded from the plugins folder, otherwise the parameter must be an absolute path. Returns an array of strings with the plugins that have failed to load.  |
+| `LoadPlugin(pluginPath)`               | Load plugin from path. Parameter can be relative or absolute path. Return plugin name. |
+| `UnloadPlugin(pluginName)`              | Unload plugin by name. |
+| `NewPluginInstance(pluginName, ...args)`  | Create an instance of a plugin. An instance of a plugin contains a unique UID. |
+| `GetPluginInstance(UID)`| Retrieves a plugin instance using its UID. |
+| `Restart()`| Restart the application if WebView is the main one, otherwise throw exception. |
+
+
+IWindow
+
+| Property       | Description                                                                                             |
+|--------------------------|---------------------------------------------------------------------------------------------------------|
+| `Rect`               | Gets a IRect instance. Which has position and size of the window. |
+| `State`               | Gets or sets windows state. -1 = None; 0 = Minimized; 1 = Normalized; 2 = Maximized. |
+| `StateText`              | Gets or sets windows state by text. |
+| `Title`  | Gets or sets a WebView's title. |
+| `TopMost`| Gets or sets a value that indicates whether this WebView appears in the topmost z-order. True if the window is topmost; otherwise, false. |
+| `Enabled`  | Gets or sets a value indicating whether this WebView is enabled in the user interface (UI). True if the WebView is enabled; otherwise, false. The default value is true. |
+| `IsVisible`  | Gets a value that indicates whether this WebView window is visible. True if the WebView is visible; otherwise, false. The default value is false. |
+| `PreventClose`  | Prevents the window from closing, and fires the OnClose event. |
+| `IsActive`  | Gets a value that indicates whether this WebView window is active. |
+| `AllowSnap`  | Get or set the snap window function. Default is true. |
+| `ClickThrough`  | Get or set ClickThrough. |
+
+| Method       | Description                                                                                             |
+|--------------------------|---------------------------------------------------------------------------------------------------------|
+| `ToCenter()`               | Moves the window to the center of the screen. |
+| `Close()`               | Close the window. If PreventClose is true, OnClose event is fire. |
+| `ShowBehind()`              | Shows the window without activating it. |
+| `Show()`  | Shows the window. |
+| `Hide()`| Hide the window. |
+| `Drag()`| Drag the window. |
+| `ResizeTopLeft()`| Resize top-left the window. |
+| `ResizeTopRight()`| Resize top-right the window. |
+| `ResizeBottomLeft()`| Resize bottom-left the window. |
+| `ResizeBottomRight()`| Resize bottom-right the window. |
+| `ResizeLeft()`| Resize left the window. |
+| `ResizeRight()`| Resize right the window. |
+| `ResizeTop()`| Resize top the window. |
+| `ResizeBottom()`| Resize bottom the window. |
+| `Minimize()`| Minimize the window. |
+| `Restore()`| Restore the window. |
+| `Maximize()`| Maximize the window. |
+| `Normalize()`| Normalize the window. |
+| `AddEventListener(type, callback)`| Appends an event listener for events whose type attribute value is type. |
+| `RemoveEventListener(type, callback)`| Removes the event listener in target's event listener list with the same type and callback. |
+
+| Event       | Description                                                                                             |
+|--------------------------|---------------------------------------------------------------------------------------------------------|
+| `StateChanged, OnStateChanged`               | StateChanged event. Fire when WindowState change. (integer, string) == (State, StateText) |
+| `Closing, OnClosing`               | Close event. It is triggered when the PreventClose property is true and try to close the window. |
+| `PositionChanged, OnPositionChanged`              | PositionChanged event. It is triggered when the window changes position. (number, number) == (X, Y)|
+| `Activated, OnActivated`| Activated event. (boolean) == (activated)|
+| `EnabledEvent, OnEnabled`| Enabled event. (boolean) == (enabled)|
+| `Visible, OnVisible`| Visible event. (boolean) == (visible)|
+| `SizeChanged, OnSizeChanged`| Size Changed event. (number, number) == (width, height)|
+| `Raw`| Raw event for platform specific. To use it in plugins C#. |
+
+IRect
+
+| Property       | Description                                                                                             |
+|--------------------------|---------------------------------------------------------------------------------------------------------|
+| `X`               | Window position in X. |
+| `Y`               | Window position in Y. |
+| `Width`              | Window width. |
+| `Height`  | Window Height. |
+| `MaxWidth`| Maximum window width. |
+| `MaxHeight`  | Maximum window height. |
+| `MinWidth`  | Minimun window width. |
+| `MinHeight`  | Minimun window height. |
+
+| Method       | Description                                                                                             |
+|--------------------------|---------------------------------------------------------------------------------------------------------|
+| `SetSize(width, height)`               | Set size of window. |
+| `GetSize()`               | Get size of window. [number, number] == [width, height] |
+| `SetPosition(x, y)`       | Set position of window. |
+| `GetPosition()`  | Get position of window. [number, number] == [x, y] |
+| `SetPositionAndSize(x, y, width, height)`| Set position and size of window |
+| `GetPositionAndSize()`| Get position and size of window. [number, number, number, number] == [x, y, width, height] |
+
+
+IBrowser
+
+| Property       | Description                                                                                             |
+|--------------------------|---------------------------------------------------------------------------------------------------------|
+| `Uri`               | Gets the URI of the current top level document. |
+| `HotReload`  | Enable or disable automatic browser reloading, use it during development. Default value is false. |
+| `CanGoBack`    | True if the WebView is able to navigate to a previous page in the navigation history. |
+| `CanGoForward`  | True if the WebView is able to navigate to a next page in the navigation history. |
+| `IsPlayingAudio`| Indicates whether any audio output from this CoreWebView2 is playing. true if audio is playing even if IBrowser.Muted is true. |
+| `AcceleratorKeys`  | Determines whether browser-specific accelerator keys are enabled. Default value is true. |
+| `SwipeNavigation`  | Determines whether the end user to use swiping gesture on touch input enabled devices to navigate in WebView. Swiping gesture navigation on touch screen includes: Swipe left/right (swipe horizontally) to navigate to previous/next page in navigation history. Default value is false. |
+| `ZoomFactor`  | Gets or sets the zoom factor for the WebView. |
+| `MaxZoomFactor`  | Gets maximum ZommFactor. |
+| `MinZoomFactor`  | Gets minimum ZoomFactor. |
+| `ResetWebViewOnReload`  | When WebView is reload, reset all settings to default. Default value is false. |
+| `ContextMenu`  | Gets IContextMenu instance. |
+| `Muted`  | Indicates whether all audio output from this WebView2 is muted or not. Set to true will mute this CoreWebView2, and set to false will unmute this WebView2. True if audio is muted. |
+| `StatusBarText`  | Get last status bar text. |
+| `ColorScheme`  | Get or set browser color scheme. 0 = Auto; 1 = Light; 2 = Dark. |
+| `ColorSchemeText`  | Gets or sets the browser's color scheme by text. |
+
+
+
+| Method       | Description                                                                                             |
+|--------------------------|---------------------------------------------------------------------------------------------------------|
+| `OpenDevTools()`   | Open developer tools [DevTools]. |
+| `Navigate(uri)`    | Navigate to a specific URI. |
+| `Reload()`         | Reload the page. |
+| `HardReload()`     | Reload the page avoiding the cache. |
+| `ExecuteScriptAsync(javaScript)` | Runs JavaScript code from the javaScript parameter in the current WebView. |
+| `GoBack()`| Navigates the WebView to the previous page in the navigation history. |
+| `GoForward()`| Navigates the WebView to the next page in the navigation history. |
+| `AddEventListener(type, callback)`| Appends an event listener for events whose type attribute value is type. |
+| `RemoveEventListener(type, callback)`| Removes the event listener in target's event listener list with the same type and callback. |
+
+
+
+| Event       | Description                                                                                             |
+|--------------------------|---------------------------------------------------------------------------------------------------------|
+| `PlayingAudio, OnPlayingAudio`  | PlayingAudio Event. It is triggered when the browser is playing audio. (boolean) == (isPlayingAudio) |
+| `MutedEvent, OnMuted`  | Muted Event. It is triggered when the browser is muted or unmute. (boolean) == (muted) |
+| `ZoomFactorChanged, OnZoomFactorChanged` | ZoomFactor changed event (number) == (zoomFactor)|
+| `StatusBarTextChanged, OnStatusBarTextChanged`| StatusBarTextChanged event. (string) == (statusBarText)|
+
+
+IContextMenu
+
+| Property       | Description                                                                                             |
+|--------------------------|---------------------------------------------------------------------------------------------------------|
+| `Enable`               | Enable or disable context menu. |
+| `Children`               | Gets all cotext menu items. [...IContextMenuItem] |
+| `ShowNativeItems`      | Enable or disable native items. |
+| `EmojiItem, UndoItem, RedoItem, CutItem, CopyItem, PasteItem, PasteAndMatchStyleItem, SelectAllItem, WritingDirectionItem, ShareItem, WebCaptureItem, LoopItem, ShowAllControlsItem, SaveMediaAsItem, CopyLinkItem, CopyLinkToHighlightItem, PrintItem, BackItem, ForwardItem, ReloadItem, SaveAsItem, SaveImageAsItem, CopyImageItem, CopyImageLocationItem, MagnifyImageItem, SaveFrameAsItem, CopyVideoFrameItem, PictureInPictureItem, SaveLinkAsItem, OpenLinkInNewWindowItem`  | Enable or disable individual native item. |
+
+| Method       | Description                                                                                             |
+|--------------------------|---------------------------------------------------------------------------------------------------------|
+| `CreateContextItem(name, kind, icon = null, callback = null)`               | Create an IContextMenuItem instance. name = text to show; Kind = "Command", "CheckBox", "Radio", "Separator", "Submenu"; icon = Absolute or relative path to icon; callback = function(kind, checked)  |
+| `CreateContextItemSeparator()`  | Create an IContextMenuItem instance as separator. |
+| `AddItem(item)`       | Add the item at the end. |
+| `InsertItem(index, item)`       | Insert the item at the specified position. |
+| `RemoveItem(item)`  | Removes the item. Return true if removed. |
+| `RemoveItemAt(index)`| Removes the item to the specified position. |
+| `Clear()`| Remove all items. |
+
+
+IContextMenuItem
+
+| Property       | Description                                                                                             |
+|--------------------------|---------------------------------------------------------------------------------------------------------|
+| `Name`               | Gets text to show. |
+| `kind`               | Gets kind. "Command", "CheckBox", "Radio", "Separator", "Submenu". |
+| `Icon`      | Gets absolute or relative path to icon. |
+| `Parent`  | It is different from null if the item belongs to a submenu. |
+| `Children`  | Gets the items contained in this item as static array. |
+| `Checked`               | Gets or sets checked. For "CheckBox" or "Radio" |
+| `Enabled`               | Gets or sets enable. |
+| `Visible`               | Gets or sets visibility. |
+| `Callback`               | Gets or sets callback function. |
+
+| Method       | Description                                                                                             |
+|--------------------------|---------------------------------------------------------------------------------------------------------|
+| `AddItem(item)`       | Add the item to the end of the submenu. |
+| `InsertItem(index, item)`       | Insert the item at the specified position of the submenu. |
+| `RemoveItem(item)`  | Removes the item of the submenu. Return true if removed. |
+| `RemoveItemAt(index)`| Removes the item to the specified position of the submenu. |
+| `Clear()`| Remove all items of the submenu. |
+
+
+IPrintManager
+
+
+| Property       | Description                                                                                             |
+|--------------------------|---------------------------------------------------------------------------------------------------------|
+| `IsBusy`               | Gets a value indicating that the printmanager is printing. |
+| `Orientation`  | Print orientation. 0 = Portrait; 1 = Landscape. |
+| `OrientationText`    | Gets or Sets Print orientation as text. |
+| `MarginBottom`  | Gets or sets the bottom margin in centimeters. The default is 1 cm. |
+| `MarginLeft`| Gets or sets the left margin in centimeters. The default is 1 cm. |
+| `MarginRight`  | Gets or sets the right margin in centimeters. The default is 1 cm. |
+| `MarginTop`  | Gets or sets the top margin in centimeters. The default is 1 cm. |
+| `PageWidth`  | Gets or sets the zoom factor for the WebView. |
+| `PageHeight`  | Gets or sets the page height in centimeters. The default height is 29.7 cm. |
+| `ScaleFactor`  | Gets or sets the scale factor is a value between 0.1 and 2.0. The default is 1. |
+| `PrintBackgrounds`  | True if background colors and images should be printed. The default value is false. |
+| `PrintSelectionOnly`  | True if only the current end user's selection of HTML in the document should be printed. The default value is false. |
+| `PrintHeaderAndFooter`  | True if header and footer should be printed. The default value is false. |
+| `FooterUri`  | Gets or sets the URI in the footer if PrintHeaderAndFooter is true. The default value is the current URI. |
+| `PageRanges`  | Gets or sets the page range to print. Defaults to empty string, which means print all pages. |
+| `Copies`  | Gets or sets number of copies to print. Minimum value is 1 and the maximum copies count is 999. The default value is 1. |
+| `PagesPerSide`| Gets or sets prints multiple pages of a document on a single piece of paper. Choose from 1, 2, 4, 6, 9 or 16. The default value is 1.  |
+| `PrinterName`| The name of the printer to use. Defaults to empty string. |
+| `Duplex`| Printer duplex settings. The default value is PrintDuplex.Default. 0 = Default; 1 = OneSided; 2 = TwoSidedLongEdge; 3 = TwoSidedShortEdge. |
+| `DuplesText`| Printer duplex settings. The default value is PrintDuplex.Default. |
+| `ColorMode`| Printer color mode. The default value is PrintColorMode.Default. 0 = Default; 1 = Color; 2 = Grayscale. |
+| `ColorModeText`| Printer color mode. The default value is PrintColorMode.Default. |
+| `Collation`| Printer collation. The default value is PrintCollation.Default. 0 = Default; 1 = Collated; 2 = Uncollated. |
+| `CollationText`| Printer collation. The default value is PrintCollation.Default. |
+
+
+| Method       | Description                                                                                             |
+|--------------------------|---------------------------------------------------------------------------------------------------------|
+| `Print()`   | Print the current web page to the specified printer with the provided settings. |
+| `PrintToPDF(ResultFilePath)`    | Print the current page to PDF with the provided settings. |
+| `AddEventListener(type, callback)`| Appends an event listener for events whose type attribute value is type. |
+| `RemoveEventListener(type, callback)`| Removes the event listener in target's event listener list with the same type and callback. |
+
+
+| Event       | Description                                                                                             |
+|--------------------------|---------------------------------------------------------------------------------------------------------|
+| `PrintFinished, OnPrintFinished`  | PrintFinished Event. (number, string) == (PrintStatus, PrintStatusText). 0 = Succeeded; 1 = PrinterUnavailable; 2 = OtherError. |
+
