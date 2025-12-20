@@ -125,8 +125,7 @@ IBrowser
 | `StatusBarText`  | Get last status bar text. |
 | `ColorScheme`  | Get or set browser color scheme. 0 = Auto; 1 = Light; 2 = Dark. |
 | `ColorSchemeText`  | Gets or sets the browser's color scheme by text. |
-| `AddEventListener(type, callback)`| Appends an event listener for events whose type attribute value is type. |
-| `RemoveEventListener(type, callback)`| Removes the event listener in target's event listener list with the same type and callback. |
+
 
 
 | Method       | Description                                                                                             |
@@ -138,6 +137,9 @@ IBrowser
 | `ExecuteScriptAsync(javaScript)` | Runs JavaScript code from the javaScript parameter in the current WebView. |
 | `GoBack()`| Navigates the WebView to the previous page in the navigation history. |
 | `GoForward()`| Navigates the WebView to the next page in the navigation history. |
+| `AddEventListener(type, callback)`| Appends an event listener for events whose type attribute value is type. |
+| `RemoveEventListener(type, callback)`| Removes the event listener in target's event listener list with the same type and callback. |
+
 
 
 | Event       | Description                                                                                             |
@@ -189,3 +191,48 @@ IContextMenuItem
 | `RemoveItem(item)`  | Removes the item of the submenu. Return true if removed. |
 | `RemoveItemAt(index)`| Removes the item to the specified position of the submenu. |
 | `Clear()`| Remove all items of the submenu. |
+
+
+IPrintManager
+
+
+| Property       | Description                                                                                             |
+|--------------------------|---------------------------------------------------------------------------------------------------------|
+| `IsBusy`               | Gets a value indicating that the printmanager is printing. |
+| `Orientation`  | Print orientation. 0 = Portrait; 1 = Landscape. |
+| `OrientationText`    | Gets or Sets Print orientation as text. |
+| `MarginBottom`  | Gets or sets the bottom margin in centimeters. The default is 1 cm. |
+| `MarginLeft`| Gets or sets the left margin in centimeters. The default is 1 cm. |
+| `MarginRight`  | Gets or sets the right margin in centimeters. The default is 1 cm. |
+| `MarginTop`  | Gets or sets the top margin in centimeters. The default is 1 cm. |
+| `PageWidth`  | Gets or sets the zoom factor for the WebView. |
+| `PageHeight`  | Gets or sets the page height in centimeters. The default height is 29.7 cm. |
+| `ScaleFactor`  | Gets or sets the scale factor is a value between 0.1 and 2.0. The default is 1. |
+| `PrintBackgrounds`  | True if background colors and images should be printed. The default value is false. |
+| `PrintSelectionOnly`  | True if only the current end user's selection of HTML in the document should be printed. The default value is false. |
+| `PrintHeaderAndFooter`  | True if header and footer should be printed. The default value is false. |
+| `FooterUri`  | Gets or sets the URI in the footer if PrintHeaderAndFooter is true. The default value is the current URI. |
+| `PageRanges`  | Gets or sets the page range to print. Defaults to empty string, which means print all pages. |
+| `Copies`  | Gets or sets number of copies to print. Minimum value is 1 and the maximum copies count is 999. The default value is 1. |
+| `PagesPerSide`| Gets or sets prints multiple pages of a document on a single piece of paper. Choose from 1, 2, 4, 6, 9 or 16. The default value is 1.  |
+| `PrinterName`| The name of the printer to use. Defaults to empty string. |
+| `Duplex`| Printer duplex settings. The default value is PrintDuplex.Default. 0 = Default; 1 = OneSided; 2 = TwoSidedLongEdge; 3 = TwoSidedShortEdge. |
+| `DuplesText`| Printer duplex settings. The default value is PrintDuplex.Default. |
+| `ColorMode`| Printer color mode. The default value is PrintColorMode.Default. 0 = Default; 1 = Color; 2 = Grayscale. |
+| `ColorModeText`| Printer color mode. The default value is PrintColorMode.Default. |
+| `Collation`| Printer collation. The default value is PrintCollation.Default. 0 = Default; 1 = Collated; 2 = Uncollated. |
+| `CollationText`| Printer collation. The default value is PrintCollation.Default. |
+
+
+| Method       | Description                                                                                             |
+|--------------------------|---------------------------------------------------------------------------------------------------------|
+| `Print()`   | Print the current web page to the specified printer with the provided settings. |
+| `PrintToPDF(ResultFilePath)`    | Print the current page to PDF with the provided settings. |
+| `AddEventListener(type, callback)`| Appends an event listener for events whose type attribute value is type. |
+| `RemoveEventListener(type, callback)`| Removes the event listener in target's event listener list with the same type and callback. |
+
+
+| Event       | Description                                                                                             |
+|--------------------------|---------------------------------------------------------------------------------------------------------|
+| `PrintFinished, OnPrintFinished`  | PrintFinished Event. (number, string) == (PrintStatus, PrintStatusText). 0 = Succeeded; 1 = PrinterUnavailable; 2 = OtherError. |
+
