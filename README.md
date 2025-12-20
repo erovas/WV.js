@@ -105,3 +105,44 @@ IRect
 | `GetPositionAndSize()`| Get position and size of window. [number, number, number, number] == [x, y, width, height] |
 
 
+IBrowser
+
+| Property       | Description                                                                                             |
+|--------------------------|---------------------------------------------------------------------------------------------------------|
+| `Uri`               | Gets the URI of the current top level document. |
+| `HotReload`  | Enable or disable automatic browser reloading, use it during development. Default value is false. |
+| `CanGoBack`    | True if the WebView is able to navigate to a previous page in the navigation history. |
+| `CanGoForward`  | True if the WebView is able to navigate to a next page in the navigation history. |
+| `IsPlayingAudio`| Indicates whether any audio output from this CoreWebView2 is playing. true if audio is playing even if IBrowser.Muted is true. |
+| `AcceleratorKeys`  | Determines whether browser-specific accelerator keys are enabled. Default value is true. |
+| `SwipeNavigation`  | Determines whether the end user to use swiping gesture on touch input enabled devices to navigate in WebView. Swiping gesture navigation on touch screen includes: Swipe left/right (swipe horizontally) to navigate to previous/next page in navigation history. Default value is false. |
+| `ZoomFactor`  | Gets or sets the zoom factor for the WebView. |
+| `MaxZoomFactor`  | Gets maximum ZommFactor. |
+| `MinZoomFactor`  | Gets minimum ZoomFactor. |
+| `ResetWebViewOnReload`  | When WebView is reload, reset all settings to default. Default value is false. |
+| `ContextMenu`  | Gets IContextMenu instance. |
+| `Muted`  | Indicates whether all audio output from this WebView2 is muted or not. Set to true will mute this CoreWebView2, and set to false will unmute this WebView2. True if audio is muted. |
+| `StatusBarText`  | Get last status bar text. |
+| `ColorScheme`  | Get or set browser color scheme. 0 = Auto; 1 = Light; 2 = Dark. |
+| `ColorSchemeText`  | Gets or sets the browser's color scheme by text. |
+| `AddEventListener(type, callback)`| Appends an event listener for events whose type attribute value is type. |
+| `RemoveEventListener(type, callback)`| Removes the event listener in target's event listener list with the same type and callback. |
+
+
+| Method       | Description                                                                                             |
+|--------------------------|---------------------------------------------------------------------------------------------------------|
+| `OpenDevTools()`   | Open developer tools [DevTools]. |
+| `Navigate(uri)`    | Navigate to a specific URI. |
+| `Reload()`         | Reload the page. |
+| `HardReload()`     | Reload the page avoiding the cache. |
+| `ExecuteScriptAsync(javaScript)` | Runs JavaScript code from the javaScript parameter in the current WebView. |
+| `GoBack()`| Navigates the WebView to the previous page in the navigation history. |
+| `GoForward()`| Navigates the WebView to the next page in the navigation history. |
+
+
+| Event       | Description                                                                                             |
+|--------------------------|---------------------------------------------------------------------------------------------------------|
+| `PlayingAudio, OnPlayingAudio`  | PlayingAudio Event. It is triggered when the browser is playing audio. (boolean) == (isPlayingAudio) |
+| `MutedEvent, OnMuted`  | Muted Event. It is triggered when the browser is muted or unmute. (boolean) == (muted) |
+| `ZoomFactorChanged, OnZoomFactorChanged` | ZoomFactor changed event (number) == (zoomFactor)|
+| `StatusBarTextChanged, OnStatusBarTextChanged`| StatusBarTextChanged event. (string) == (statusBarText)|
