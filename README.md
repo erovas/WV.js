@@ -37,7 +37,7 @@ IWindow
 | Property       | Description                                                                                             |
 |--------------------------|---------------------------------------------------------------------------------------------------------|
 | `Rect`               | Gets a IRect instance. Which has position and size of the window. |
-| `State`               | Gets or sets windows state. -1 = None; 0 = Minimized; 1 = Normalized; 2 = Maximized|
+| `State`               | Gets or sets windows state. -1 = None; 0 = Minimized; 1 = Normalized; 2 = Maximized. |
 | `StateText`              | Gets or sets windows state by text. |
 | `Title`  | Gets or sets a WebView's title. |
 | `TopMost`| Gets or sets a value that indicates whether this WebView appears in the topmost z-order. True if the window is topmost; otherwise, false. |
@@ -81,4 +81,27 @@ IWindow
 | `Visible, OnVisible`| Visible event. (boolean) == (visible)|
 | `SizeChanged, OnSizeChanged`| Size Changed event. (number, number) == (width, height)|
 | `Raw`| Raw event for platform specific. To use it in plugins C#. |
+
+IRect
+
+| Property       | Description                                                                                             |
+|--------------------------|---------------------------------------------------------------------------------------------------------|
+| `X`               | Window position in X. |
+| `Y`               | Window position in Y. |
+| `Width`              | Window width. |
+| `Height`  | Window Height. |
+| `MaxWidth`| Maximum window width. |
+| `MaxHeight`  | Maximum window height. |
+| `MinWidth`  | Minimun window width. |
+| `MinHeight`  | Minimun window height. |
+
+| Method       | Description                                                                                             |
+|--------------------------|---------------------------------------------------------------------------------------------------------|
+| `SetSize(width, height)`               | Set size of window. |
+| `GetSize()`               | Get size of window. [number, number] == [width, height] |
+| `SetPosition(x, y)`       | Set position of window. |
+| `GetPosition()`  | Get position of window. [number, number] == [x, y] |
+| `SetPositionAndSize(x, y, width, height)`| Set position and size of window |
+| `GetPositionAndSize()`| Get position and size of window. [number, number, number, number] == [x, y, width, height] |
+
 
