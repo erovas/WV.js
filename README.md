@@ -5,14 +5,8 @@ WV.js is a framework to build desktop applications with simple html, css and js,
 
 For Windows 10 or higher.
 
-## How to use?
-
-``` html
-<script src="script.js"></script>
-```
-
-### API
-IWebView
+## API
+### IWebView
 
 | Property       | Description                                                                                             |
 |--------------------------|---------------------------------------------------------------------------------------------------------|
@@ -32,7 +26,7 @@ IWebView
 | `Restart()`| Restart the application if WebView is the main one, otherwise throw exception. |
 
 
-IWindow
+### IWindow
 
 | Property       | Description                                                                                             |
 |--------------------------|---------------------------------------------------------------------------------------------------------|
@@ -82,7 +76,7 @@ IWindow
 | `SizeChanged, OnSizeChanged`| Size Changed event. (number, number) == (width, height)|
 | `Raw`| Raw event for platform specific. To use it in plugins C#. |
 
-IRect
+### IRect
 
 | Property       | Description                                                                                             |
 |--------------------------|---------------------------------------------------------------------------------------------------------|
@@ -105,7 +99,7 @@ IRect
 | `GetPositionAndSize()`| Get position and size of window. [number, number, number, number] == [x, y, width, height] |
 
 
-IBrowser
+### IBrowser
 
 | Property       | Description                                                                                             |
 |--------------------------|---------------------------------------------------------------------------------------------------------|
@@ -150,7 +144,7 @@ IBrowser
 | `StatusBarTextChanged, OnStatusBarTextChanged`| StatusBarTextChanged event. (string) == (statusBarText)|
 
 
-IContextMenu
+### IContextMenu
 
 | Property       | Description                                                                                             |
 |--------------------------|---------------------------------------------------------------------------------------------------------|
@@ -170,7 +164,7 @@ IContextMenu
 | `Clear()`| Remove all items. |
 
 
-IContextMenuItem
+### IContextMenuItem
 
 | Property       | Description                                                                                             |
 |--------------------------|---------------------------------------------------------------------------------------------------------|
@@ -193,7 +187,7 @@ IContextMenuItem
 | `Clear()`| Remove all items of the submenu. |
 
 
-IPrintManager
+### IPrintManager
 
 
 | Property       | Description                                                                                             |
@@ -236,3 +230,85 @@ IPrintManager
 |--------------------------|---------------------------------------------------------------------------------------------------------|
 | `PrintFinished, OnPrintFinished`  | PrintFinished Event. (number, string) == (PrintStatus, PrintStatusText). 0 = Succeeded; 1 = PrinterUnavailable; 2 = OtherError. |
 
+## How to use?
+
+You can find examples in https://github.com/erovas/WV.js-Examples
+
+```text
+MyFolderApp/
+├── plugins/
+│   ├── SysMenuController.dll
+│   ...
+│   ...
+│   ...
+│   └── TaskbarController.dll
+├── runtimes/
+│   └── win-x64/
+│       └── WebView2Loader.dll
+├── src/
+│   ├── index.html   # Main file
+│   ├── MyScript.js  
+│   ├── MyStyle.css
+│   ...
+│   ...
+│   └── MyResources/
+│       ├── MyIcon.ico
+│       ...
+│       ...
+│       ...
+│       └── MyImage.jpg
+├── Microsoft.Web.WebView2.Core.dll
+├── WV.dll
+├── WV.Win.deps.json
+├── WV.Win.dll
+├── WV.Win.exe    # Executer
+└── WV.Win.runtimeconfig.json
+```
+
+#### index.html
+``` html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script src="MyScript.js"></script>
+    <link rel="MyStyle" href="style.css">
+    <!-- <script defer src="MyScript.js"></script> -->
+</head>
+<body>
+    <!-- My content -->
+    ...
+    <!-- <script src="MyScript.js"></script> -->
+</body>
+</html>
+```
+
+#### MyScript.js
+``` Javascript
+
+/** @type {IWebView} */
+const WV = window.WebView.Sync;
+/** @type {IWindow} */
+const WVWin = WV.Window;
+/** @type {IBrowser} */
+const WVBrowser = WV.Browser;
+/** @type {IRect} */
+const Rect = WVWin.Rect;
+
+// Do not allow snapping, since it is a window with a fixed size.
+WVWin.AllowSnap = false;
+WVWin.Title = "MyBeautifulDesktopApp";
+
+// Open DevTools, for debugging only.
+//WVBrowser.OpenDevTools();
+
+// Automatic reload when files are modified, for debugging only.
+//WVBrowser.HotReload = true;
+
+// Do not allow special keys (F5, Ctrl + F5, etc...)
+WVBrowser.AcceleratorKeys = false;
+
+
+``` 
