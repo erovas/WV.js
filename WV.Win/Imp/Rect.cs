@@ -181,7 +181,7 @@ namespace WV.Win.Imp
 
                 RECT rect = GetRECT(this.WV);
 
-                if (rect.Width == value)
+                if (rect.Height == value)
                     return;
 
                 if (value > MaxHeight)

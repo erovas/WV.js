@@ -163,8 +163,17 @@ namespace WV.Interfaces
         void OpenDevTools();
 
         /// <summary>
+        /// Runs an asynchronous DevToolsProtocol method.
+        /// </summary>
+        /// <param name="method">The full name of the method in the format {domain}.{method}.</param>
+        /// <param name="parametersAsJson">A JSON formatted string containing the parameters for the corresponding method.</param>
+        /// <returns></returns>
+        Task<string> CallDevToolsProtocolAsync(string method, string? parametersAsJson = null);
+
+        /// <summary>
         /// Navigate to a specific URI.
         /// </summary>
+        /// <param name="uri"></param>
         void Navigate(string uri);
 
         /// <summary>

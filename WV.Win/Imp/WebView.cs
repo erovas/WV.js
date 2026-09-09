@@ -1,16 +1,18 @@
 ﻿
-using System.Collections.Concurrent;
 using Microsoft.Web.WebView2.Core;
-using WV.Win.Win32.Structs;
-using WV.Win.Win32.Enums;
+using System.Collections.Concurrent;
 using System.Diagnostics;
-using System.Reflection;
-using WV.Win.Classes;
-using WV.Win.Scripts;
 using System.Drawing;
+using System.Reflection;
+using System.Text.Json;
 using WV.Attributes;
 using WV.Interfaces;
+using WV.Win.Classes;
+using WV.Win.Invoke;
+using WV.Win.Scripts;
 using WV.Win.Win32;
+using WV.Win.Win32.Enums;
+using WV.Win.Win32.Structs;
 
 namespace WV.Win.Imp
 {
@@ -552,44 +554,6 @@ namespace WV.Win.Imp
             ctx.Unload();
             this.ImportedPlugins.Remove(pluginName);
         }
-
-        /*
-        public object Entrada(object obj)
-        {
-            //Si le pasamos  { a:123, b:321 }, obtenemos '123', funciona con SYNC y ASYNC en JS
-            //NO sirve con objetos planos que tengan getter y setters
-            //object asd_get = Invoke.Helper.PropertyGet(obj, "a");
-
-            //No se puede setear propiedades simples de objetos planos, ni con setters
-            //Invoke.Helper.PropertySet(obj, "a", 3210123);
-
-            //No da error, pero no funciona
-            //Invoke.Helper.PropertySetRef(obj, "a", 3210123);
-
-            //asd_get = Invoke.Helper.PropertyGet(obj, "a");
-
-            
-            // Funciona si se ejecuta desde ASYNC en JS
-            object salida = Invoke.Helper.ExecuteMethod(obj, "", "Hola 123");
-
-            try
-            {
-                // Funciona tanto si se ejecuta desde SYNC y ASYNC en JS
-                Task.Run(() => { Invoke.Helper.ExecuteMethod(obj, "", "Hola 123"); });
-            }
-            catch (Exception)
-            {
-                throw;
-            }
-            
-
-            JSFunction func = new JSFunction(obj);
-
-            func.Execute("Hola 123");
-
-            return obj;
-        }
-        */
 
         #endregion
 

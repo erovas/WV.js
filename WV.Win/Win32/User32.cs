@@ -108,15 +108,8 @@ namespace WV.Win.Win32
         [DllImport("gdi32.dll")]
         public static extern IntPtr CreateSolidBrush(uint crColor);
 
-        [DllImport("user32.dll", SetLastError = true)]
-        public static extern IntPtr FindWindowEx(IntPtr parentHandle, IntPtr childAfter, string className, string? windowTitle);
-
         [DllImport("user32.dll")]
         public static extern IntPtr GetForegroundWindow();
-
-        [DllImport("user32.dll")]
-        public static extern bool IsWindowVisible(IntPtr hWnd);
-
 
 
         [DllImport("user32.dll")]
@@ -124,12 +117,6 @@ namespace WV.Win.Win32
 
         [DllImport("user32.dll")]
         public static extern bool GetCursorPos(out POINT lpPoint);
-
-        [DllImport("user32.dll")] 
-        public static extern IntPtr GetTopWindow(IntPtr hWnd);
-
-        [DllImport("user32.dll")] 
-        public static extern IntPtr GetWindow(IntPtr hWnd, uint uCmd);
 
     }
 }

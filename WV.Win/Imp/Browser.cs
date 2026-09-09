@@ -17,12 +17,12 @@ namespace WV.Win.Imp
         {
             add
             {
-                Plugin.ThrowDispose(this.WV);
+                ThrowDispose();
                 playingAudioEvent += value;
             }
             remove
             {
-                Plugin.ThrowDispose(this.WV);
+                ThrowDispose();
                 playingAudioEvent -= value;
             }
         }
@@ -32,12 +32,12 @@ namespace WV.Win.Imp
         {
             add
             {
-                Plugin.ThrowDispose(this.WV);
+                ThrowDispose();
                 mutedEvent += value;
             }
             remove
             {
-                Plugin.ThrowDispose(this.WV);
+                ThrowDispose();
                 mutedEvent -= value;
             }
         }
@@ -47,12 +47,12 @@ namespace WV.Win.Imp
         {
             add
             {
-                Plugin.ThrowDispose(this.WV);
+                ThrowDispose();
                 zoomFactorChangedEvent += value;
             }
             remove
             {
-                Plugin.ThrowDispose(this.WV);
+                ThrowDispose();
                 zoomFactorChangedEvent -= value;
             }
         }
@@ -62,12 +62,12 @@ namespace WV.Win.Imp
         {
             add 
             {
-                Plugin.ThrowDispose(this.WV);
+                ThrowDispose();
                 statusBarTextChangedEvent += value;
             }
             remove 
             {
-                Plugin.ThrowDispose(this.WV);
+                ThrowDispose();
                 statusBarTextChangedEvent -= value;
             }
         }
@@ -89,7 +89,7 @@ namespace WV.Win.Imp
         { 
             get
             {
-                Plugin.ThrowDispose(this.WV);
+                ThrowDispose();
                 return this.CoreWV2 != null ? this.CoreWV2.Source : string.Empty;
             }
             
@@ -99,7 +99,7 @@ namespace WV.Win.Imp
         {
             get
             {
-                Plugin.ThrowDispose(this.WV);
+                ThrowDispose();
                 return this.CoreWV2 != null ? this.CoreWV2.CanGoBack : false;
             }
         }  
@@ -108,7 +108,7 @@ namespace WV.Win.Imp
         {
             get
             {
-                Plugin.ThrowDispose(this.WV);
+                ThrowDispose();
                 return this.CoreWV2 != null ? this.CoreWV2.CanGoForward : false;
             }
         } 
@@ -117,7 +117,7 @@ namespace WV.Win.Imp
         {
             get
             {
-                Plugin.ThrowDispose(this.WV);
+                ThrowDispose();
                 return this.CoreWV2 != null ? this.CoreWV2.IsDocumentPlayingAudio : false;
             }
         } 
@@ -137,13 +137,13 @@ namespace WV.Win.Imp
         {
             get 
             {
-                Plugin.ThrowDispose(this.WV);
+                ThrowDispose();
                 return this.CoreWV2 != null ? this.CoreWV2.Settings.AreBrowserAcceleratorKeysEnabled : true;
             } 
 
             set
             {
-                Plugin.ThrowDispose(this.WV);
+                ThrowDispose();
                 if (this.CoreWV2 != null)
                     this.CoreWV2.Settings.AreBrowserAcceleratorKeysEnabled = value;
             }
@@ -153,13 +153,13 @@ namespace WV.Win.Imp
         {
             get 
             {
-                Plugin.ThrowDispose(this.WV);
+                ThrowDispose();
                 return this.CoreWV2 != null ? this.CoreWV2.Settings.IsSwipeNavigationEnabled : false;
             } 
 
             set
             {
-                Plugin.ThrowDispose(this.WV);
+                ThrowDispose();
 
                 if (this.CoreWV2 != null)
                     this.CoreWV2.Settings.IsSwipeNavigationEnabled = value;
@@ -176,12 +176,12 @@ namespace WV.Win.Imp
         {
             get 
             {
-                Plugin.ThrowDispose(this.WV);
+                ThrowDispose();
                 return _HotReload;
             }
             set
             {
-                Plugin.ThrowDispose(this.WV);
+                ThrowDispose();
 
                 _HotReload = value;
 
@@ -269,12 +269,12 @@ namespace WV.Win.Imp
         { 
             get
             {
-                Plugin.ThrowDispose(this.WV);
+                ThrowDispose();
                 return _ResetWebViewOnReload;
             }
             set
             {
-                Plugin.ThrowDispose(this.WV);
+                ThrowDispose();
                 this._ResetWebViewOnReload = value;
             }
         }
@@ -285,12 +285,12 @@ namespace WV.Win.Imp
         {
             get 
             {
-                Plugin.ThrowDispose(this.WV);
+                ThrowDispose();
                 return this.CoreWV2 != null ? this.CoreWV2.IsMuted : false;
             } 
             set
             {
-                Plugin.ThrowDispose(this.WV);
+                ThrowDispose();
                 if (this.CoreWV2 != null)
                     this.CoreWV2.IsMuted = value;
             }
@@ -305,12 +305,12 @@ namespace WV.Win.Imp
         {
             get
             {
-                Plugin.ThrowDispose(this.WV);
+                ThrowDispose();
                 return _MaxZoomFactor;
             }
             internal set
             {
-                Plugin.ThrowDispose(this.WV);
+                ThrowDispose();
                 _MaxZoomFactor = value;
             }
         }
@@ -320,12 +320,12 @@ namespace WV.Win.Imp
         { 
             get
             {
-                Plugin.ThrowDispose(this.WV);
+                ThrowDispose();
                 return _MinZoomFactor;
             }
             internal set
             {
-                Plugin.ThrowDispose(this.WV);
+                ThrowDispose();
                 _MinZoomFactor = value;
             }
         }
@@ -334,12 +334,12 @@ namespace WV.Win.Imp
         {
             get 
             {
-                Plugin.ThrowDispose(this.WV);
+                ThrowDispose();
                 return this.WV.WVController != null ? this.WV.WVController.ZoomFactor : 1;
             } 
             set
             {
-                Plugin.ThrowDispose(this.WV);
+                ThrowDispose();
 
                 if (this.WV.WVController == null)
                     return;
@@ -368,7 +368,7 @@ namespace WV.Win.Imp
         {
             get
             {
-                Plugin.ThrowDispose(this.WV);
+                ThrowDispose();
                 return this.CoreWV2 != null ? this.CoreWV2.StatusBarText : string.Empty;
             }
         }
@@ -381,7 +381,7 @@ namespace WV.Win.Imp
         { 
             get
             {
-                Plugin.ThrowDispose(this.WV);
+                ThrowDispose();
 
                 if(this.WV.WVController == null)
                     return BrowserColorScheme.Auto;
@@ -390,7 +390,7 @@ namespace WV.Win.Imp
             }
             set
             {
-                Plugin.ThrowDispose(this.WV);
+                ThrowDispose();
 
                 if (this.WV.WVController == null)
                     return;
@@ -419,44 +419,57 @@ namespace WV.Win.Imp
 
         public void OpenDevTools()
         {
-            Plugin.ThrowDispose(this.WV);
+            ThrowDispose();
             this.CoreWV2?.OpenDevToolsWindow();
+        }
+
+        public async Task<string> CallDevToolsProtocolAsync(string method, string? parametersAsJson = null)
+        {
+            ThrowDispose();
+
+            if (this.CoreWV2 == null)
+                return string.Empty;
+
+            if (parametersAsJson == null)
+                parametersAsJson = "{}";
+            
+            return await this.CoreWV2.CallDevToolsProtocolMethodAsync(method, parametersAsJson);
         }
 
         public void Navigate(string uri)
         {
-            Plugin.ThrowDispose(this.WV);
+            ThrowDispose();
             this.CoreWV2?.Navigate(uri);
         }
 
         public void Reload()
         {
-            Plugin.ThrowDispose(this.WV);
-            _ = Aux_Reload(false);
+            ThrowDispose();
+            Aux_Reload(false);
         }
 
         public void HardReload()
         {
-            Plugin.ThrowDispose(this.WV);
+            ThrowDispose();
             //this.WV.CleanFileCache();
-            _ = Aux_Reload(true);
+            Aux_Reload(true);
         }
 
         public Task<string>? ExecuteScriptAsync(string javaScript)
         {
-            Plugin.ThrowDispose(this.WV);
+            ThrowDispose();
             return this.CoreWV2?.ExecuteScriptAsync(javaScript);
         }
 
         public void GoBack()
         {
-            Plugin.ThrowDispose(this.WV);
+            ThrowDispose();
             this.CoreWV2?.GoBack();
         }
 
         public void GoForward()
         {
-            Plugin.ThrowDispose(this.WV);
+            ThrowDispose();
             this.CoreWV2?.GoForward();
         }
 
@@ -474,12 +487,12 @@ namespace WV.Win.Imp
         {
             get 
             {
-                Plugin.ThrowDispose(this.WV);
+                ThrowDispose();
                 return OnPlayingAudioFN?.Raw;
             } 
             set
             {
-                Plugin.ThrowDispose(this.WV);
+                ThrowDispose();
 
                 if (value == OnPlayingAudioFN?.Raw)
                     return;
@@ -511,12 +524,12 @@ namespace WV.Win.Imp
         {
             get 
             {
-                Plugin.ThrowDispose(this.WV);
+                ThrowDispose();
                 return OnMutedFN?.Raw;
             } 
             set
             {
-                Plugin.ThrowDispose(this.WV);
+                ThrowDispose();
 
                 if (value == OnMutedFN?.Raw)
                     return;
@@ -548,12 +561,12 @@ namespace WV.Win.Imp
         {
             get 
             {
-                Plugin.ThrowDispose(this.WV);
+                ThrowDispose();
                 return OnZoomFactorChangedFN?.Raw;
             } 
             set
             {
-                Plugin.ThrowDispose(this.WV);
+                ThrowDispose();
 
                 if (value == OnZoomFactorChangedFN?.Raw)
                     return;
@@ -590,12 +603,12 @@ namespace WV.Win.Imp
         {
             get
             {
-                Plugin.ThrowDispose(this.WV);
+                ThrowDispose();
                 return OnStatusBarTextChangedFN?.Raw;
             }
             set
             {
-                Plugin.ThrowDispose(this.WV);
+                ThrowDispose();
 
                 if (value == OnStatusBarTextChangedFN?.Raw)
                     return;
@@ -622,9 +635,14 @@ namespace WV.Win.Imp
 
         #endregion
 
-        private Task<string>? Aux_Reload(bool ignoreCache)
+        private void ThrowDispose()
         {
-            return this.CoreWV2?.CallDevToolsProtocolMethodAsync("Page.reload", @"{""ignoreCache"":" + ignoreCache.ToString().ToLower() + "}");
+            Plugin.ThrowDispose(this.WV);
+        }
+
+        private void Aux_Reload(bool ignoreCache)
+        {
+            this.CoreWV2?.CallDevToolsProtocolMethodAsync("Page.reload", @"{""ignoreCache"":" + ignoreCache.ToString().ToLower() + "}");
         }
 
         internal void ClearEvents()

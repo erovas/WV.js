@@ -1,7 +1,7 @@
 ﻿using System.Reflection;
+using System.Runtime.InteropServices;
 using WV.Win.Invoke.Enums;
 using WV.Win.Invoke.Structs;
-using System.Runtime.InteropServices;
 using VarEnum = WV.Win.Invoke.Enums.VarEnum;
 
 namespace WV.Win.Invoke
@@ -35,9 +35,8 @@ namespace WV.Win.Invoke
         }
 
         #region PRIVATE
-
+        
         private const int LOCALE_USER_DEFAULT = 0x0400;
-        private const uint DISPID_UNKNOWN = unchecked((uint)0xFFFFFFFF);
         private const int LCID_DEFAULT = 0x0409;
         private const int DISPID_PROPERTYPUT = -3;
         private const int DISP_E_EXCEPTION = unchecked((int)0x80020009);
@@ -48,9 +47,9 @@ namespace WV.Win.Invoke
 
         unsafe private static object? InvokeDispMember(object target, string name, object?[] args, ParameterModifier[]? modifiers = null, MethodKind methodKind = MethodKind.Method)
         {
-           
-            if(target == null)
-                throw new ArgumentNullException(nameof(target) + " is null");
+
+            if (target == null)
+                throw new ArgumentNullException(nameof(target));
 
             if (!target.GetType().IsCOMObject)
                 throw new ArgumentException(nameof(target) + " is not a COM object");
@@ -66,7 +65,7 @@ namespace WV.Win.Invoke
             uint dispId = GetDispID(disp, name, LOCALE_USER_DEFAULT);
 
             IntPtr pVariantArgArray = IntPtr.Zero;
-            IntPtr pDispIDArray = IntPtr.Zero;
+            IntPtr pDispIDs = IntPtr.Zero;
 
             int argCount = args.Length;
             int variantSize = Marshal.SizeOf<Variant>();
@@ -100,24 +99,25 @@ namespace WV.Win.Invoke
                     }
                 }
 
-                DISPPARAMS[] paramArray = new DISPPARAMS[1];
-                paramArray[0].varArgs = pVariantArgArray;
-                paramArray[0].argCount = argCount;
+                DISPPARAMS dispParams = new DISPPARAMS
+                {
+                    varArgs = pVariantArgArray,
+                    argCount = argCount
+                };
 
                 if (methodKind == MethodKind.PropertyPut || methodKind == MethodKind.PropertyPutRef)
                 {
                     // For property putters, the first DISPID argument needs to be DISPID_PROPERTYPUT
-                    pVariantArgArray = Marshal.AllocCoTaskMem(variantSize * argCount);
-                    Marshal.WriteInt32(pVariantArgArray, DISPID_PROPERTYPUT);
-
-                    paramArray[0].namedArgCount = 1;
-                    paramArray[0].namedArgDispIds = pVariantArgArray;
+                    pDispIDs = Marshal.AllocCoTaskMem(sizeof(int));
+                    Marshal.WriteInt32(pDispIDs, DISPID_PROPERTYPUT);
+                    dispParams.namedArgCount = 1;
+                    dispParams.namedArgDispIds = pDispIDs;
                 }
                 else
                 {
                     // Otherwise, no named parameters are necessary
-                    paramArray[0].namedArgCount = 0;
-                    paramArray[0].namedArgDispIds = IntPtr.Zero;
+                    dispParams.namedArgCount = 0;
+                    dispParams.namedArgDispIds = IntPtr.Zero;
                 }
 
                 // Make the call
@@ -146,7 +146,7 @@ namespace WV.Win.Invoke
                         IID_NULL,
                         LOCALE_USER_DEFAULT,
                         flags,
-                        paramArray,
+                        new[] { dispParams },
                         out result,
                         out info,
                         out err);
@@ -211,14 +211,13 @@ namespace WV.Win.Invoke
                     Marshal.FreeCoTaskMem(pVariantArgArray);
                 }
 
-                if (pDispIDArray != IntPtr.Zero)
-                    Marshal.FreeCoTaskMem(pDispIDArray);
+                if (pDispIDs != IntPtr.Zero)
+                    Marshal.FreeCoTaskMem(pDispIDs);
             }
 
-            
+
         }
 
-        
         /// <summary>
         /// https://learn.microsoft.com/en-us/previous-versions/windows/desktop/automat/dispid-constants
         /// </summary>
@@ -228,11 +227,11 @@ namespace WV.Win.Invoke
         private static uint GetDispID(IDispatch disp, string name, int lcid)
         {
             if (string.IsNullOrWhiteSpace(name))
-                return DISPID_UNKNOWN;
+                return 0;
 
             uint[] dispid = new uint[1];
             disp.GetIDsOfNames(IID_NULL, new string[] { name }, 1, lcid, dispid);
-            
+
             return dispid[0];
         }
 
@@ -270,8 +269,7 @@ namespace WV.Win.Invoke
             pdestvar->_typeUnion._vt = (ushort)(psrcvar->_typeUnion._vt | (ushort)VarEnum.VT_BYREF);
         }
 
-        
-
         #endregion
+
     }
 }

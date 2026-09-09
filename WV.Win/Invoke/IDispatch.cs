@@ -15,7 +15,7 @@ namespace WV.Win.Invoke
         [PreserveSig]  // Agregado
         void GetTypeInfo(int info, int lcid, out IntPtr typeInfo);
 
-        //[PreserveSig]  // Agregado
+        [PreserveSig]  // Agregado
         void GetIDsOfNames(
             [MarshalAs(UnmanagedType.LPStruct)] Guid iid,
             [MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.LPWStr)] string[] names,
@@ -24,10 +24,10 @@ namespace WV.Win.Invoke
             [MarshalAs(UnmanagedType.LPArray)][Out] uint[] DISPID
             );
 
-        //[PreserveSig]  // Agregado
+        [PreserveSig]  // Agregado
         void Invoke(
-            uint dispid, 
-            [MarshalAs(UnmanagedType.LPStruct)] Guid iid, 
+            uint dispid,
+            [MarshalAs(UnmanagedType.LPStruct)] Guid iid,
             int lcid,
             InvokeFlags flags,
             [MarshalAs(UnmanagedType.LPArray)][In, Out] DISPPARAMS[] paramArray,

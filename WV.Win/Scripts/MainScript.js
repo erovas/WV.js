@@ -37,6 +37,9 @@ HO.options.shouldPassTypedArraysAsArrays = true;
 //Tratar de limpiar referencias de objetos C# creados (Función propia de WV2)
 HO.cleanupSome();
 
+// Forzar que todos los métodos que terminan en "Async" sean asíncronos
+HO.options.forceAsyncMethodMatches = [/Async$/];
+
 //==============================================================//
 
 Object.defineProperties(EXPOSE, {

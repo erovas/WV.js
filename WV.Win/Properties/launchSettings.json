@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "WV.Win": {
+      "commandName": "Project",
+      "debugEngines": "managed,native"
+    }
+  }
+}
