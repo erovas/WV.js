@@ -25,7 +25,8 @@ namespace WV.Win
                 uri = null;
 
             // Se inicia una Instancia de WebView (Inicia el programa)
-            new WebView(null, uri, lang);
+            _ = new WebView(null, uri, lang);
+
         }
 
         private static string PackJSScript(string? script)

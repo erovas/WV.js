@@ -2,6 +2,7 @@
 using Microsoft.Web.WebView2.Core;
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Drawing;
 using System.Reflection;
 using System.Text.Json;
@@ -13,6 +14,7 @@ using WV.Win.Scripts;
 using WV.Win.Win32;
 using WV.Win.Win32.Enums;
 using WV.Win.Win32.Structs;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace WV.Win.Imp
 {
@@ -38,15 +40,15 @@ namespace WV.Win.Imp
         // Cache para almacenar archivos: <ruta, (bytes, tamaño, lastModified, eTag)>
         private ConcurrentDictionary<string, BytesCache> FileCache { get; } = new();
 
-        internal Window InternalWindow { get; }
+        internal Window InternalWindow { get; private set; }
 
-        internal Browser InternalBrowser { get; }
+        internal Browser InternalBrowser { get; private set; }
 
-        internal PrintManager InternalPrintManager { get; }
+        internal PrintManager InternalPrintManager { get; private set; }
 
-        internal IntPtr Handle { get; }
+        internal IntPtr Handle { get; private set; }
 
-        internal string RootPath { get; private set; } = string.Empty;
+        internal string RootPath { get; private set; }
 
         #endregion
 
@@ -83,7 +85,7 @@ namespace WV.Win.Imp
             }
         }
 
-        public bool IsMain { get; }
+        public bool IsMain { get; private set; }
         
         public string[] PluginsName
         {
@@ -103,33 +105,49 @@ namespace WV.Win.Imp
 
         #region CONSTRUCTORS
 
-#pragma warning disable CS8604 // Posible argumento de referencia nulo
-        public WebView(IWebView? webView) : this(webView, null)
-#pragma warning restore CS8604 // Posible argumento de referencia nulo
+        public WebView(IWebView webView) : this(webView, null)
         {
         }
 
-#pragma warning disable CS8604 // Posible argumento de referencia nulo
-        public WebView(IWebView? webView, string? url) : this(webView, url, null)
-#pragma warning restore CS8604 // Posible argumento de referencia nulo
+        public WebView(IWebView webView, string? url) : this(webView, url, null)
         {
         }
 
-#pragma warning disable CS8604 // Posible argumento de referencia nulo
-        public WebView(IWebView? webView, string? url, string? language) : base(webView)
-#pragma warning restore CS8604 // Posible argumento de referencia nulo
+        public WebView(IWebView webView, string? url, string? language) : base(webView)
+        {
+            ValidateConstruction(this);
+
+            InitializeState(language);
+
+            InitializeWindow();
+
+            // Crear el WebView2 y agregarlo a la ventana, configurarlo
+            _ = CreateCoreWebView2Async(url);
+
+            // Bucle de mensajes, que hacen funcionar la ventana
+            Utils32.RunMessageLoop();
+        }
+
+        
+        private static void ValidateConstruction(WebView wv)
         {
             // Para evitar que al compilar se quite el metodo por "no uso"
-            this.PluginDisposed("______");
+            wv.PluginDisposed("______");
 
             // Se ha construido mal la instancia.
             // WebView == null es solo para la ventana principal
-            if (Helpers.WinInstances.Count > 0 && this.WebView == null)
+            if (Helpers.WinInstances.Count > 0 && wv.WebView == null)
                 throw new Exception("Instance created incorrectly");
+        }
 
+
+        [MemberNotNull(nameof(InternalWindow), nameof(InternalBrowser), nameof(InternalPrintManager))]
+        private void InitializeState(string? language)
+        {
             // Para saber si es el WebView principal
             this.IsMain = Helpers.WinInstances.Count == 0;
 
+            // Resolver Language
             language = this.IsMain ? language : (string.IsNullOrWhiteSpace(language) ? this.WebView.Browser.Language : language);
 
             this.InternalWindow = new Window(this);
@@ -147,46 +165,26 @@ namespace WV.Win.Imp
                 MethodInfo? setter = prop?.GetSetMethod(nonPublic: true);
                 setter?.Invoke(this, new object[] { this });
             }
+        }
 
-            //---------------------------------------//
-
+        [MemberNotNull(nameof(WVUIContext))]
+        private void InitializeWindow()
+        {
             this.Handle = Helpers.CreateMainWindows(this);
-            IntPtr MainhWnd = this.Handle;
 
             // Ubicar la pantalla al inicio del monitor
             this.InternalWindow.Rect.SetPosition(0, 0);
 
             // Obteniendo el hilo del contexto del UI
-            this.WVUIContext = new UIThreadSyncCtx(MainhWnd);
+            this.WVUIContext = new UIThreadSyncCtx(this.Handle);
             SynchronizationContext.SetSynchronizationContext(this.WVUIContext);
-
-            // Start initializing WebView2 in a fire-and-forget manner. Errors will be handled in the initialization function
-            _ = CreateCoreWebView2Async(MainhWnd, url);
-
-            //---------------------------------------//
-
-            // Bucle de mensajes, que hacen funcionar la ventana
-            Utils32.RunMessageLoop();
         }
 
-        #endregion
-
-        #region WndProc
-
-        // Controla los mensajes de la ventana principal (padre)
-        internal IntPtr WndProc(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam)
+        [MemberNotNull(nameof(RootPath))]
+        private async Task CreateCoreWebView2Async(string? url)
         {
-            if(this.Disposed)
-                return IntPtr.Zero;
+            IntPtr hwnd = this.Handle;
 
-            return this.InternalWindow.WndProc(hWnd, msg, wParam, lParam);
-        }
-
-        #endregion
-
-        // Crear el WebView2 y agregarlo a la ventana, configurarlo
-        private async Task CreateCoreWebView2Async(IntPtr hwnd, string? url)
-        {
             //if (string.IsNullOrWhiteSpace(url))
             //    url = "index.html";
 
@@ -195,173 +193,25 @@ namespace WV.Win.Imp
 
             try
             {
-                url = url?.Replace('\\', '/');
+                url = ResolveUrl(url);
 
-                // Por defecto
-                if (string.IsNullOrWhiteSpace(url))
-                    url = AppManager.SrcPath + "/index.html";
+                this.RootPath = ResolveRootPath(url);
 
-                // Puede ser un ruta a un archivo html local
-                else if (Helpers.IsLocalPath(url) && !File.Exists(url))
-                    throw new ArgumentException($"File not exists '{url}'");
-
-                // Puede ser una ruta relativa en el directorio en donde esta WV.js
-                else if (!Helpers.IsUri(url) && !File.Exists(url = AppManager.SrcPath + "/" + url))
-                    throw new ArgumentException($"File not exists '{url}'");
-
-                // Es una url a una pagina "https://www.MyPage.com"
-                //else if(...)
-
-                //url = Helpers.URL + "index.html"; //Para pruebas desde una pagina de "internet"
-
-                // Si la url es una pagina, la ruta de ejecución será la del .../src
-                if (Helpers.IsUri(url))
-                    this.RootPath = AppManager.SrcPath;
-                
-                // Si la url es un archivo, la ruta de ejecución será en donde se encuentra el archivo html
-                else
-                    this.RootPath = Path.GetDirectoryName(url) + "";
-
-                CoreWebView2Environment? Environment = null;
-                string Language = this.InternalBrowser.Language;
-
-                if (!Helpers.LangEnvironments.TryGetValue(Language, out Environment))
-                {
-                    string UserDataPath = AppManager.UserDataPath + (this.IsMain ? "" : "/" + Language);
-
-                    //Quitar restricciones que tiene el WebView
-                    string args = string.Empty;
-                    //args += "--enable-features=EnableHostObjectJsonConversion,WebAssembly ";
-
-                    args += "--enable-features=WebRtcHybridAgc,WebRtcAllowScreenCaptureUnprompted ";
-                    args += "--enable-automation ";
-                    args += "--no-first-run ";
-                    args += "--disable-popup-blocking ";
-                    args += "--force-screen-capture ";
-                    args += "--force-display-capture ";
-                    args += "--auto-select-desktop-capture-source=\"Entire Screen\" ";
-                    args += "--enable-usermedia-screen-capturing ";
-
-                    args += "--disable-features=msWebOOUI,msPdfOOUI ";      //Quitar 3 puntos de menu contextual cuando se selecciona un texto
-                    args += "--disable-web-security ";                      //Deshabilita la política de mismo origen (Same-Origin Policy), permitiendo solicitudes cruzadas entre dominios
-                    args += "--allow-file-access-from-files ";
-                    args += "--allow-file-access ";
-                    //args += "--enable-features=WebAssembly ";
-                    args += "--auto-accept-camera-and-microphone-capture ";
-                    args += "--disable-features=PermissionsPolicy ";
-                    //args += "--auto-select-desktop-capture-source ";
-                    args += "--autoplay-policy=no-user-gesture-required ";  //Permitir auto reproduccion audio/video
-                    args += "--enable-gpu-benchmarking ";                 //Habilita chrome.gpuBenchmarking TODO: Mirar
-                    args += "--enable-precise-memory-info ";              //Valores mas precisos con performance.memory, 
-
-                    // expose-gc [Expone funcion gc() - Garbage Collector]
-                    // trace-gc [logs detallados del GC en la consola]
-                    args += "--js-flags=--expose-gc,--trace-gc "; 
-
-                    CoreWebView2EnvironmentOptions envOptions = new(args, Language);
-                    Environment = await CoreWebView2Environment.CreateAsync(null, UserDataPath, envOptions);
-                    Helpers.LangEnvironments[Language] = Environment;
-                }
+                CoreWebView2Environment Environment = await GetOrCreateEnvironmentAsync(this);
 
                 // Agregar control WebView a la ventana
                 this.WVController = await Environment.CreateCoreWebView2ControllerAsync(hwnd);
 
-                //this.InternalPrintManager.PrintSettings = Environment.CreatePrintSettings();
-                this.InternalPrintManager.ToDefault();
+                ConfigureController(this);
 
-                //Evitar parpadeo del WebView cuando se renderiza por primera vez
-                this.WVController.DefaultBackgroundColor = Color.Transparent;
+                CoreWebView2 coreWV2 = this.WVController.CoreWebView2;
 
-                // Hacer que el WebView tenga el mismo tamaño de la ventana
-                User32.GetWindowRect(hwnd, out RECT rect);
-                this.WVController.Bounds = new Rectangle(0, 0, rect.Width, rect.Height);
-                this.WVController.IsVisible = true;
+                await ConfigureWebView(this, coreWV2);
 
-                CoreWebView2 CoreWV2 = this.WVController.CoreWebView2;
-
-                //Ejecuta script principal justo antes de parsear el HTML
-                foreach (string item in Helpers.JScripts)
-                    await CoreWV2.AddScriptToExecuteOnDocumentCreatedAsync(item);
-
-                CoreWV2.Settings.AreDefaultScriptDialogsEnabled = true;
-                CoreWV2.Settings.IsWebMessageEnabled = true;
-                CoreWV2.Settings.AreHostObjectsAllowed = true;
-
-                //Se carga el WebView como HostObject que va a manejar todo lo relacionado con la ventana del WebView
-                CoreWV2.AddHostObjectToScript(Helpers.HostObjectName, this);
-
-                //Crear Servidor local tipo "https://WV.js"
-                //if (Directory.Exists(AppManager.SrcPath))
-                //    CoreWV2.SetVirtualHostNameToFolderMapping(AppManager.Domain, AppManager.SrcPath, CoreWebView2HostResourceAccessKind.Allow);
-
-                //=====================================================//
-
-                // Que NO aparezca la opción de abrir la dev tools desde el menu contextual o atajo de teclado
-                CoreWV2.Settings.AreDevToolsEnabled = false;
-
-                // Controlarlo con JS
-                // Quitar el Zoom con gesture (touchpad | touchscreen)
-                //CoreWV2.Settings.IsPinchZoomEnabled = false;
-
-                // Navegación en touch con gesto
-                CoreWV2.Settings.IsSwipeNavigationEnabled = false;
-
-                // Controlarlo con JS
-                //Que NO aparezca el menu click derecho. ¡¡¡Ya se hace de otra manera!!!
-                //CoreWV2.Settings.AreDefaultContextMenusEnabled = false;
-
-                // Quitar F5, y demas teclas especiales
-                //this.InternalBrowser.AcceleratorKeys = false;
-
-                // Controlarlo con JS
-                // Quitar el Zoom con CTRL + +, Ctrl + scroll
-                //CoreWV2.Settings.IsZoomControlEnabled = false;
-
-                // Eliminar la statusbar (esquina inferior izquierda)
-                CoreWV2.Settings.IsStatusBarEnabled = false;
-
-                // Evento para manejar OnZoomFactoChanged de JS
-                this.WVController.ZoomFactorChanged += WV_ZoomFactorChanged;
-
-                // Se hace disparar el evento, para obtener el ZoomFactor Maximo
-                this.WVController.ZoomFactor = double.MaxValue;
-
-                //=====================================================//
-
-                //window.chrome.webview.hostObjects.Window.getHostProperty("posicion").then(x => console.log(JSON.parse(x)))
-
-                CoreWV2.ContextMenuRequested += WV2_ContextMenuRequested;
-                CoreWV2.IsMutedChanged += WV2_IsMutedChanged;
-                CoreWV2.IsDocumentPlayingAudioChanged += WV2_IsDocumentPlayingAudioChanged;
-                CoreWV2.StatusBarTextChanged += CoreWV2_StatusBarTextChanged;
-                CoreWV2.NavigationStarting += WV2_NavigationStarting;   //Evento "reload" para cuando se pulsa F5
-                // "*" for all requests
-                CoreWV2.AddWebResourceRequestedFilter("*", CoreWebView2WebResourceContext.All, CoreWebView2WebResourceRequestSourceKinds.All);
-                //CoreWV2.AddWebResourceRequestedFilter("*", CoreWebView2WebResourceContext.All);   // Deprecated
-                CoreWV2.WebResourceRequested += WV2_ResourceRequested;
-
-                //----------------------------//
-
-                CoreWV2.NewWindowRequested += CoreWV2_NewWindowRequested;
-                //CoreWV2.ProcessFailed += WV2_ProcessFailed;
-                //CoreWV2.WebMessageReceived += WV2_WebMessageReceived;
-                //CoreWV2.FrameCreated += WV2_FrameCreated;
-                CoreWV2.PermissionRequested += WV2_PermissionRequested;
-                
-                //CoreWV2.ContentLoading += WV2_ContentLoading;
-                //CoreWV2.DOMContentLoaded += WV2_DOMContentLoaded;
-                CoreWV2.NavigationCompleted += WV2_NavigationCompleted;
-
-                CoreWV2.ScreenCaptureStarting += WV2_ScreenCaptureStarting;
-
-                //----------------------------//
-                if (AppManager.IsDebugging)
-                    CoreWV2.OpenDevToolsWindow();
+                RegisterWebViewEvents(this, coreWV2);
 
                 //Navegar a la página
-                CoreWV2.Navigate(url);
-
-                
+                coreWV2.Navigate(url);
             }
             catch (WebView2RuntimeNotFoundException)
             {
@@ -380,7 +230,7 @@ namespace WV.Win.Imp
                     bool success = Helpers.InstallWebView2Runtime(installerPath);
 
                     if (success)
-                        await CreateCoreWebView2Async(hwnd, url);
+                        await CreateCoreWebView2Async(url);
                     else
                         throw new Exception("WebView2 installation not completed");
                 }
@@ -402,6 +252,201 @@ namespace WV.Win.Imp
             }
         }
 
+        private static string ResolveUrl(string? url)
+        {
+            url = url?.Replace('\\', '/');
+
+            // Por defecto
+            if (string.IsNullOrWhiteSpace(url))
+                url = AppManager.SrcPath + "/index.html";
+
+            // Puede ser un ruta a un archivo html local
+            else if (Helpers.IsLocalPath(url) && !File.Exists(url))
+                throw new ArgumentException($"File not exists '{url}'");
+
+            // Puede ser una ruta relativa en el directorio en donde esta WV.js
+            else if (!Helpers.IsUri(url) && !File.Exists(url = AppManager.SrcPath + "/" + url))
+                throw new ArgumentException($"File not exists '{url}'");
+
+            // Es una url a una pagina "https://www.MyPage.com"
+            //else if(...)
+
+            //url = Helpers.URL + "index.html"; //Para pruebas desde una pagina de "internet"
+
+            return url;
+        }
+
+        private static string ResolveRootPath(string url)
+        {
+            // Si la url es una pagina, la ruta de ejecución será la del .../src
+            if (Helpers.IsUri(url))
+                return AppManager.SrcPath;
+
+            // Si la url es un archivo, la ruta de ejecución será en donde se encuentra el archivo html
+            else
+                return Path.GetDirectoryName(url) + "";
+        }
+
+        private static async Task<CoreWebView2Environment> GetOrCreateEnvironmentAsync(WebView wv)
+        {
+            CoreWebView2Environment? environment = null;
+            string lang = wv.Browser.Language;
+
+            if (!Helpers.LangEnvironments.TryGetValue(lang, out environment))
+            {
+                string userDataPath = AppManager.UserDataPath + (wv.IsMain ? "" : "/" + lang);
+
+                //Quitar restricciones que tiene el WebView
+                string args = string.Empty;
+                //args += "--enable-features=EnableHostObjectJsonConversion,WebAssembly ";
+
+                args += "--enable-features=WebRtcHybridAgc,WebRtcAllowScreenCaptureUnprompted ";
+                args += "--enable-automation ";
+                args += "--no-first-run ";
+                args += "--disable-popup-blocking ";
+                args += "--force-screen-capture ";
+                args += "--force-display-capture ";
+                args += "--auto-select-desktop-capture-source=\"Entire Screen\" ";
+                args += "--enable-usermedia-screen-capturing ";
+
+                args += "--disable-features=msWebOOUI,msPdfOOUI ";      //Quitar 3 puntos de menu contextual cuando se selecciona un texto
+                args += "--disable-web-security ";                      //Deshabilita la política de mismo origen (Same-Origin Policy), permitiendo solicitudes cruzadas entre dominios
+                args += "--allow-file-access-from-files ";
+                args += "--allow-file-access ";
+                //args += "--enable-features=WebAssembly ";
+                args += "--auto-accept-camera-and-microphone-capture ";
+                args += "--disable-features=PermissionsPolicy ";
+                //args += "--auto-select-desktop-capture-source ";
+                args += "--autoplay-policy=no-user-gesture-required ";  //Permitir auto reproduccion audio/video
+                args += "--enable-gpu-benchmarking ";                 //Habilita chrome.gpuBenchmarking TODO: Mirar
+                args += "--enable-precise-memory-info ";              //Valores mas precisos con performance.memory, 
+
+                // expose-gc [Expone funcion gc() - Garbage Collector]
+                // trace-gc [logs detallados del GC en la consola]
+                args += "--js-flags=--expose-gc,--trace-gc ";
+
+                var envOptions = new CoreWebView2EnvironmentOptions(args, lang);
+                environment = await CoreWebView2Environment.CreateAsync(null, userDataPath, envOptions);
+                Helpers.LangEnvironments[lang] = environment;
+            }
+
+            return environment;
+        }
+
+        private static void ConfigureController(WebView wv)
+        {
+            //this.InternalPrintManager.PrintSettings = Environment.CreatePrintSettings();
+            wv.InternalPrintManager.ToDefault();
+
+            //Evitar parpadeo del WebView cuando se renderiza por primera vez
+            wv.WVController!.DefaultBackgroundColor = Color.Transparent;
+
+            // Hacer que el WebView tenga el mismo tamaño de la ventana
+            User32.GetWindowRect(wv.Handle, out RECT rect);
+            wv.WVController.Bounds = new Rectangle(0, 0, rect.Width, rect.Height);
+            wv.WVController.IsVisible = true;
+        }
+
+        private static async Task ConfigureWebView(WebView wv, CoreWebView2 coreWV2)
+        {
+            //Ejecuta script principal justo antes de parsear el HTML
+            foreach (string item in Helpers.JScripts)
+                await coreWV2.AddScriptToExecuteOnDocumentCreatedAsync(item);
+
+            coreWV2.Settings.AreDefaultScriptDialogsEnabled = true;
+            coreWV2.Settings.IsWebMessageEnabled = true;
+            coreWV2.Settings.AreHostObjectsAllowed = true;
+
+            //Se carga el WebView como HostObject que va a manejar todo lo relacionado con la ventana del WebView
+            coreWV2.AddHostObjectToScript(Helpers.HostObjectName, wv);
+
+            //Crear Servidor local tipo "https://WV.js"
+            //if (Directory.Exists(AppManager.SrcPath))
+            //    CoreWV2.SetVirtualHostNameToFolderMapping(AppManager.Domain, AppManager.SrcPath, CoreWebView2HostResourceAccessKind.Allow);
+
+            //=====================================================//
+
+            // Que NO aparezca la opción de abrir la dev tools desde el menu contextual o atajo de teclado
+            coreWV2.Settings.AreDevToolsEnabled = false;
+
+            // Controlarlo con JS
+            // Quitar el Zoom con gesture (touchpad | touchscreen)
+            //CoreWV2.Settings.IsPinchZoomEnabled = false;
+
+            // Navegación en touch con gesto
+            coreWV2.Settings.IsSwipeNavigationEnabled = false;
+
+            // Controlarlo con JS
+            //Que NO aparezca el menu click derecho. ¡¡¡Ya se hace de otra manera!!!
+            //CoreWV2.Settings.AreDefaultContextMenusEnabled = false;
+
+            // Quitar F5, y demas teclas especiales
+            //this.InternalBrowser.AcceleratorKeys = false;
+
+            // Controlarlo con JS
+            // Quitar el Zoom con CTRL + +, Ctrl + scroll
+            //CoreWV2.Settings.IsZoomControlEnabled = false;
+
+            // Eliminar la statusbar (esquina inferior izquierda)
+            coreWV2.Settings.IsStatusBarEnabled = false;
+        }
+
+        private void RegisterWebViewEvents(WebView wv, CoreWebView2 coreWV2)
+        {
+            CoreWebView2Controller WVController = wv.WVController!;
+
+            // Evento para manejar OnZoomFactoChanged de JS
+            WVController.ZoomFactorChanged += WV_ZoomFactorChanged;
+
+            // Se hace disparar el evento, para obtener el ZoomFactor Maximo
+            WVController.ZoomFactor = double.MaxValue;
+
+            //=====================================================//
+
+            coreWV2.ContextMenuRequested += WV2_ContextMenuRequested;
+            coreWV2.IsMutedChanged += WV2_IsMutedChanged;
+            coreWV2.IsDocumentPlayingAudioChanged += WV2_IsDocumentPlayingAudioChanged;
+            coreWV2.StatusBarTextChanged += CoreWV2_StatusBarTextChanged;
+            coreWV2.NavigationStarting += WV2_NavigationStarting;   //Evento "reload" para cuando se pulsa F5
+            // "*" for all requests
+            coreWV2.AddWebResourceRequestedFilter("*", CoreWebView2WebResourceContext.All, CoreWebView2WebResourceRequestSourceKinds.All);
+            coreWV2.WebResourceRequested += WV2_ResourceRequested;
+
+            //----------------------------//
+
+            coreWV2.NewWindowRequested += CoreWV2_NewWindowRequested;
+            //coreWV2.ProcessFailed += WV2_ProcessFailed;
+            //coreWV2.WebMessageReceived += WV2_WebMessageReceived;
+            //coreWV2.FrameCreated += WV2_FrameCreated;
+            coreWV2.PermissionRequested += WV2_PermissionRequested;
+
+            //coreWV2.ContentLoading += WV2_ContentLoading;
+            //coreWV2.DOMContentLoaded += WV2_DOMContentLoaded;
+            coreWV2.NavigationCompleted += WV2_NavigationCompleted;
+
+            coreWV2.ScreenCaptureStarting += WV2_ScreenCaptureStarting;
+
+            //----------------------------//
+            if (AppManager.IsDebugging)
+                coreWV2.OpenDevToolsWindow();
+        }
+
+        #endregion
+
+        #region WndProc
+
+        // Controla los mensajes de la ventana principal (padre)
+        internal IntPtr WndProc(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam)
+        {
+            if(this.Disposed)
+                return IntPtr.Zero;
+
+            return this.InternalWindow.WndProc(hWnd, msg, wParam, lParam);
+        }
+
+        #endregion
+
+        
         
 
         #region METHODS
@@ -692,6 +737,8 @@ namespace WV.Win.Imp
 
             //================================================//
 
+            //Se está navegando como Http, y se quiere cargar archivo locales del equipo.
+
             // Los espacios y caracteres especiales vienen con simbolos raros, quitarlos y normalizar la Uri
             string filePath = Uri.UnescapeDataString(e.Request.Uri);
 
@@ -890,16 +937,16 @@ namespace WV.Win.Imp
         // o cuando se setea ZoomFactor por encima o por debajo de sus limites
         private void WV_ZoomFactorChanged(object? sender, object e)
         {
-            if (this.WVController == null)
+            if (sender is null)
                 return;
 
-            var wvcontroller = this.WVController;
+            var wvcontroller = (CoreWebView2Controller)sender;
             Browser browser = this.InternalBrowser;
 
             // Obtener el ZoomFactor maximo
             if (browser.MaxZoomFactor == 0)
             {
-                // Normalmente es 4.999999...
+                // Normalmente es 4.9999999999999991
                 browser.MaxZoomFactor = wvcontroller.ZoomFactor;
                 // Hacemos disparar el evento para obtener el ZoomFactor minimo
                 wvcontroller.ZoomFactor = double.Epsilon;

@@ -134,7 +134,6 @@ namespace WV.Win.Imp
 
         public int Width
         {
-            //get => GetRECT(WV).Width;
             get
             {
                 Plugin.ThrowDispose(this.WV);
@@ -165,7 +164,6 @@ namespace WV.Win.Imp
 
         public int Height
         {
-            //get => GetRECT(WV).Height;
             get
             {
                 Plugin.ThrowDispose(this.WV);              
