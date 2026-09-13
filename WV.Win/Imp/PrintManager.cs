@@ -1,12 +1,13 @@
-﻿using Microsoft.Web.WebView2.Core;
-using WV.Enums;
+﻿using WV.Enums;
 using WV.Interfaces;
+using static WV.AppManager;
+using Microsoft.Web.WebView2.Core;
 
 namespace WV.Win.Imp
 {
     public class PrintManager : Plugin, IPrintManager
     {
-        #region HELPERS
+        #region Statics
 
         private static double INCH2CM(double value)
         {
@@ -20,6 +21,8 @@ namespace WV.Win.Imp
 
         #endregion
 
+        //=======================================//
+
         private CoreWebView2PrintSettings? _PrintSettings;
         private CoreWebView2PrintSettings? PrintSettings 
         {
@@ -31,43 +34,35 @@ namespace WV.Win.Imp
                 _PrintSettings!.PageHeight = CM2INCH(29.7);
             }
         }
-        private WebView WV { get; }
+        private WebView WV => (WebView)this.WebView;
 
+        //=======================================//
 
-        private event AppManager.WVEventHandler<PrintStatus, string>? printFinished;
-        public event AppManager.WVEventHandler<PrintStatus, string>? PrintFinished
+        #region Events 
+
+        public event WVEventHandler<PrintStatus, string>? PrintFinished;
+
+        #endregion
+
+        public PrintManager(IContext ctx) : base(ctx)
         {
-            add
-            {
-                Plugin.ThrowDispose(this.WV);
-                printFinished += value;
-            }
-            remove
-            {
-                Plugin.ThrowDispose(this.WV);
-                printFinished -= value;
-            }
+            
         }
 
-        public bool IsBusy {  get; private set; }
+        #region Properties
 
-        public PrintManager(WebView wv) : base(wv)
-        {
-            this.WV = wv;
-        }
-
-        #region PROPS
+        public bool IsBusy { get; private set; }
 
         public PrintOrientation Orientation 
         { 
             get
             {
-                Plugin.ThrowDispose(this.WV);
+                ThrowIfDisposed();
                 return (PrintOrientation)this.PrintSettings!.Orientation;
             }
             set
             {
-                Plugin.ThrowDispose(this.WV);
+                ThrowIfDisposed();
 
                 if(value == this.Orientation)
                     return;
@@ -75,6 +70,7 @@ namespace WV.Win.Imp
                 this.PrintSettings!.Orientation = (CoreWebView2PrintOrientation)value;
             }
         }
+        
         public string OrientationText 
         { 
             get => this.Orientation.ToString();
@@ -91,12 +87,12 @@ namespace WV.Win.Imp
         { 
             get
             {
-                Plugin.ThrowDispose(this.WV);
+                ThrowIfDisposed();
                 return INCH2CM(this.PrintSettings!.MarginBottom);
             }
             set 
             {
-                Plugin.ThrowDispose(this.WV);
+                ThrowIfDisposed();
                 this.PrintSettings!.MarginBottom = CM2INCH(value);
             }
         }
@@ -105,12 +101,12 @@ namespace WV.Win.Imp
         {
             get
             {
-                Plugin.ThrowDispose(this.WV);
+                ThrowIfDisposed();
                 return INCH2CM(this.PrintSettings!.MarginLeft);
             }
             set
             {
-                Plugin.ThrowDispose(this.WV);
+                ThrowIfDisposed();
                 this.PrintSettings!.MarginLeft = CM2INCH(value);
             }
         }
@@ -119,12 +115,12 @@ namespace WV.Win.Imp
         {
             get
             {
-                Plugin.ThrowDispose(this.WV);
+                ThrowIfDisposed();
                 return INCH2CM(this.PrintSettings!.MarginRight);
             }
             set
             {
-                Plugin.ThrowDispose(this.WV);
+                ThrowIfDisposed();
                 this.PrintSettings!.MarginRight = CM2INCH(value);
             }
         }
@@ -133,12 +129,12 @@ namespace WV.Win.Imp
         {
             get
             {
-                Plugin.ThrowDispose(this.WV);
+                ThrowIfDisposed();
                 return INCH2CM(this.PrintSettings!.MarginTop);
             }
             set
             {
-                Plugin.ThrowDispose(this.WV);
+                ThrowIfDisposed();
                 this.PrintSettings!.MarginTop = CM2INCH(value);
             }
         }
@@ -151,12 +147,12 @@ namespace WV.Win.Imp
         { 
             get
             {
-                Plugin.ThrowDispose(this.WV);
+                ThrowIfDisposed();
                 return INCH2CM(this.PrintSettings!.PageWidth);
             }
             set
             {
-                Plugin.ThrowDispose(this.WV);
+                ThrowIfDisposed();
                 this.PrintSettings!.PageWidth = CM2INCH(value);
             }
         }
@@ -165,12 +161,12 @@ namespace WV.Win.Imp
         {
             get
             {
-                Plugin.ThrowDispose(this.WV);
+                ThrowIfDisposed();
                 return INCH2CM(this.PrintSettings!.PageHeight);
             }
             set
             {
-                Plugin.ThrowDispose(this.WV);
+                ThrowIfDisposed();
                 this.PrintSettings!.PageHeight = CM2INCH(value);
             }
         }
@@ -182,12 +178,12 @@ namespace WV.Win.Imp
         { 
             get
             {
-                Plugin.ThrowDispose(this.WV);
+                ThrowIfDisposed();
                 return this.PrintSettings!.ScaleFactor;
             }
             set
             {
-                Plugin.ThrowDispose(this.WV);
+                ThrowIfDisposed();
                 this.PrintSettings!.ScaleFactor = value;
             }
         }
@@ -196,12 +192,12 @@ namespace WV.Win.Imp
         { 
             get
             {
-                Plugin.ThrowDispose(this.WV);
+                ThrowIfDisposed();
                 return this.PrintSettings!.ShouldPrintBackgrounds;
             }
             set
             {
-                Plugin.ThrowDispose(this.WV);
+                ThrowIfDisposed();
                 this.PrintSettings!.ShouldPrintBackgrounds = value;
             }
         }
@@ -210,12 +206,12 @@ namespace WV.Win.Imp
         {
             get
             {
-                Plugin.ThrowDispose(this.WV);
+                ThrowIfDisposed();
                 return this.PrintSettings!.ShouldPrintSelectionOnly;
             }
             set
             {
-                Plugin.ThrowDispose(this.WV);
+                ThrowIfDisposed();
                 this.PrintSettings!.ShouldPrintSelectionOnly = value;
             }
         }
@@ -224,12 +220,12 @@ namespace WV.Win.Imp
         {
             get
             {
-                Plugin.ThrowDispose(this.WV);
+                ThrowIfDisposed();
                 return this.PrintSettings!.ShouldPrintHeaderAndFooter;
             }
             set
             {
-                Plugin.ThrowDispose(this.WV);
+                ThrowIfDisposed();
                 this.PrintSettings!.ShouldPrintHeaderAndFooter = value;
             }
         }
@@ -238,12 +234,12 @@ namespace WV.Win.Imp
         {
             get 
             {
-                Plugin.ThrowDispose(this.WV);
+                ThrowIfDisposed();
                 return this.PrintSettings!.FooterUri;
             }
             set
             {
-                Plugin.ThrowDispose(this.WV);
+                ThrowIfDisposed();
                 this.PrintSettings!.FooterUri = value;
             }
         }
@@ -252,12 +248,12 @@ namespace WV.Win.Imp
         {
             get
             {
-                Plugin.ThrowDispose(this.WV);
+                ThrowIfDisposed();
                 return this.PrintSettings!.PageRanges;
             }
             set
             {
-                Plugin.ThrowDispose(this.WV);
+                ThrowIfDisposed();
                 this.PrintSettings!.PageRanges = value;
             }
         }
@@ -266,12 +262,12 @@ namespace WV.Win.Imp
         {
             get
             {
-                Plugin.ThrowDispose(this.WV);
+                ThrowIfDisposed();
                 return this.PrintSettings!.Copies;
             }
             set
             {
-                Plugin.ThrowDispose(this.WV);
+                ThrowIfDisposed();
                 this.PrintSettings!.Copies = value;
             }
         }
@@ -280,12 +276,12 @@ namespace WV.Win.Imp
         {
             get
             {
-                Plugin.ThrowDispose(this.WV);
+                ThrowIfDisposed();
                 return this.PrintSettings!.PagesPerSide;
             }
             set
             {
-                Plugin.ThrowDispose(this.WV);
+                ThrowIfDisposed();
                 this.PrintSettings!.PagesPerSide = value;
             }
         }
@@ -294,12 +290,12 @@ namespace WV.Win.Imp
         {
             get
             {
-                Plugin.ThrowDispose(this.WV);
+                ThrowIfDisposed();
                 return this.PrintSettings!.PrinterName;
             }
             set
             {
-                Plugin.ThrowDispose(this.WV);
+                ThrowIfDisposed();
                 this.PrintSettings!.PrinterName = value;
             }
         }
@@ -308,15 +304,16 @@ namespace WV.Win.Imp
         {
             get 
             {
-                Plugin.ThrowDispose(this.WV);
+                ThrowIfDisposed();
                 return (PrintDuplex)this.PrintSettings!.Duplex;
             }
             set 
             { 
-                Plugin.ThrowDispose(this.WV);
+                ThrowIfDisposed();
                 this.PrintSettings!.Duplex = (CoreWebView2PrintDuplex)value;
             }
         }
+        
         public string DuplesText 
         { 
             get => this.Duplex.ToString();
@@ -331,12 +328,12 @@ namespace WV.Win.Imp
         {
             get
             {
-                Plugin.ThrowDispose(this.WV);
+                ThrowIfDisposed();
                 return (PrintColorMode)this.PrintSettings!.ColorMode;
             }
             set
             {
-                Plugin.ThrowDispose(this.WV);
+                ThrowIfDisposed();
                 this.PrintSettings!.ColorMode = (CoreWebView2PrintColorMode)value;
             }
         }
@@ -355,12 +352,12 @@ namespace WV.Win.Imp
         {
             get
             {
-                Plugin.ThrowDispose(this.WV);
+                ThrowIfDisposed();
                 return (PrintCollation)this.PrintSettings!.Collation;
             }
             set
             {
-                Plugin.ThrowDispose(this.WV);
+                ThrowIfDisposed();
                 this.PrintSettings!.Collation = (CoreWebView2PrintCollation)value;
             }
         }
@@ -377,11 +374,13 @@ namespace WV.Win.Imp
 
         #endregion
 
-        #region METHODS
+        //=======================================//
+
+        #region Methods
 
         public void Print()
         {
-            Plugin.ThrowDispose(this.WV);
+            ThrowIfDisposed();
 
             if (this.IsBusy || this.PrintSettings == null || this.WV.WVController == null)
                 return;
@@ -397,14 +396,14 @@ namespace WV.Win.Imp
                 }
 
                 var result = await this.WV.WVController.CoreWebView2.PrintAsync(this.PrintSettings);
-                this.FireEvent((PrintStatus)result, result.ToString());
+                this.FireEvent((PrintStatus)result);
                 this.IsBusy = false;
             });
         }
 
         public void PrintToPDF(string ResultFilePath)
         {
-            Plugin.ThrowDispose(this.WV);
+            ThrowIfDisposed();
 
             if (this.IsBusy || this.PrintSettings == null || this.WV.WVController == null)
                 return;
@@ -421,24 +420,33 @@ namespace WV.Win.Imp
 
                 bool result = await this.WV.WVController.CoreWebView2.PrintToPdfAsync(ResultFilePath ,this.PrintSettings);
                 PrintStatus status = result ? PrintStatus.Succeeded : PrintStatus.OtherError;
-                this.FireEvent(status, status.ToString());
+                this.FireEvent(status);
                 this.IsBusy = false;
             });
         }
 
         #endregion
 
-        private void FireEvent(PrintStatus status, string strStatus)
+        //=======================================//
+
+        #region Protected Methods
+
+        protected override void ThrowIfDisposed()
         {
-            this.JSfn?.Execute(status, strStatus);
-            this.printFinished?.Invoke(this.WV, status, strStatus);
+            base.ThrowIfDisposed();
+            Plugin.ThrowIfDisposed(this.WV);
         }
 
-        internal void ClearEvents()
+        #endregion
+
+        //=======================================//
+
+        #region Internal Methods
+
+        internal void ClearAllEvents()
         {
-            this.JSfn = null;
-            this.CleanJSEvents();
-            this.printFinished = null;
+            this.ClearListeners();
+            this.ClearEvents();
         }
 
         internal void ToDefault()
@@ -447,44 +455,21 @@ namespace WV.Win.Imp
             this.IsBusy = false;
         }
 
+        #endregion
 
-        private IJSFunction? JSfn {  get; set; }
-        public object? OnPrintFinished
+        //=======================================//
+
+        #region Private Methods
+
+        private void FireEvent(PrintStatus status)
         {
-            get
-            {
-                Plugin.ThrowDispose(this.WV);
-                return this.JSfn?.Raw;
-            }
-            set
-            {
-                Plugin.ThrowDispose(this.WV);
+            if (this.Disposed)
+                return;
 
-                if (value == JSfn?.Raw)
-                    return;
-
-                this.JSfn?.Dispose();
-                this.JSfn = null;
-
-                if (value == null)
-                    return;
-
-                this.JSfn = IJSFunction.Create(value);
-            }
-        }
-
-        #region DISPOSE
-
-        protected override void Dispose(bool disposing)
-        {
-            
-        }
-
-        public override void Dispose()
-        {
-            
+            this.PrintFinished?.Invoke(this.WV, status, status.ToString());
         }
 
         #endregion
+
     }
 }

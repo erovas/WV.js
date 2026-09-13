@@ -16,6 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\WV.Logger\WV.Logger.csproj" />
     <ProjectReference Include="..\WV\WV.csproj" />
   </ItemGroup>
 

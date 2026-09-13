@@ -1,27 +1,21 @@
-﻿
-using Microsoft.Web.WebView2.Core;
-using System.Collections.Concurrent;
-using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
-using System.Drawing;
-using System.Reflection;
-using System.Text.Json;
+﻿using WV.Win.Win32;
 using WV.Attributes;
 using WV.Interfaces;
+using System.Drawing;
 using WV.Win.Classes;
-using WV.Win.Invoke;
 using WV.Win.Scripts;
-using WV.Win.Win32;
+using System.Reflection;
+using System.Diagnostics;
 using WV.Win.Win32.Enums;
 using WV.Win.Win32.Structs;
-using static System.Runtime.InteropServices.JavaScript.JSType;
+using Microsoft.Web.WebView2.Core;
+using System.Collections.Concurrent;
+using System.Diagnostics.CodeAnalysis;
 
 namespace WV.Win.Imp
 {
     public sealed class WebView : Plugin, IWebView
     {
-
-        //-------------------------------------------------------//
 
         #region INTERNAL
 
@@ -52,7 +46,7 @@ namespace WV.Win.Imp
 
         #endregion
 
-        //-------------------------------------------------------//
+        //==========================================//
 
         #region PUBLIC PROPS
 
@@ -62,7 +56,7 @@ namespace WV.Win.Imp
         {
             get
             {
-                Plugin.ThrowDispose(this);
+                Plugin.ThrowIfDisposed(this);
                 return this.InternalWindow;
             }
         }
@@ -71,7 +65,7 @@ namespace WV.Win.Imp
         {
             get
             {
-                Plugin.ThrowDispose(this);
+                Plugin.ThrowIfDisposed(this);
                 return this.InternalBrowser;
             }
         }
@@ -80,7 +74,7 @@ namespace WV.Win.Imp
         {
             get
             {
-                Plugin.ThrowDispose(this);
+                Plugin.ThrowIfDisposed(this);
                 return this.InternalPrintManager;
             }
         }
@@ -91,38 +85,41 @@ namespace WV.Win.Imp
         {
             get
             {
-                Plugin.ThrowDispose(this);
+                Plugin.ThrowIfDisposed(this);
                 var list = this.ImportedPlugins.Keys.ToList();
                 list.Insert(0, this.Name);
                 return list.ToArray();
             }
         }
-        
+
 
         #endregion
 
-        //-------------------------------------------------------//
+        //==========================================//
 
         #region CONSTRUCTORS
 
-        public WebView(IWebView webView) : this(webView, null)
+        public WebView(IContext ctx) : this(ctx, null)
         {
         }
 
-        public WebView(IWebView webView, string? url) : this(webView, url, null)
+        public WebView(IContext ctx, string? url) : this(ctx, url, null)
         {
         }
 
-        public WebView(IWebView webView, string? url, string? language) : base(webView)
+        public WebView(IContext ctx, string? url, string? language) : base(ctx)
         {
             ValidateConstruction(this);
 
-            InitializeState(language);
+            InitializeState(language, (Context)ctx);
 
             InitializeWindow();
 
             // Crear el WebView2 y agregarlo a la ventana, configurarlo
             _ = CreateCoreWebView2Async(url);
+
+            // Indicar que se ha inicializado WV.js
+            AppManager.Initialized();
 
             // Bucle de mensajes, que hacen funcionar la ventana
             Utils32.RunMessageLoop();
@@ -131,40 +128,37 @@ namespace WV.Win.Imp
         
         private static void ValidateConstruction(WebView wv)
         {
-            // Para evitar que al compilar se quite el metodo por "no uso"
-            wv.PluginDisposed("______");
-
             // Se ha construido mal la instancia.
             // WebView == null es solo para la ventana principal
             if (Helpers.WinInstances.Count > 0 && wv.WebView == null)
                 throw new Exception("Instance created incorrectly");
         }
 
-
         [MemberNotNull(nameof(InternalWindow), nameof(InternalBrowser), nameof(InternalPrintManager))]
-        private void InitializeState(string? language)
+        private void InitializeState(string? language, Context ctx)
         {
+            var isMain = Helpers.WinInstances.Count == 0;
+            var webview = ctx.WebView is null? this : (WebView)ctx.WebView;
+
             // Para saber si es el WebView principal
-            this.IsMain = Helpers.WinInstances.Count == 0;
+            this.IsMain = isMain;
+
+            // Este WebView es la ventana principal, es padre de si mismo.
+            if (isMain)
+                ctx._webview = webview;
+
+            // Este WebView es hijo del WebView de su contexto.
+            else
+                webview.Children.Add(this);
 
             // Resolver Language
-            language = this.IsMain ? language : (string.IsNullOrWhiteSpace(language) ? this.WebView.Browser.Language : language);
+            language = isMain ? language : (string.IsNullOrWhiteSpace(language) ? webview.Browser.Language : language);
 
-            this.InternalWindow = new Window(this);
-            this.InternalBrowser = new Browser(this, language);
-            this.InternalPrintManager = new PrintManager(this);
+            var source = this.Logger.Source;
 
-            // Esta instancia de WebView es hija de otro WebView, se guarda esta instancia como su hijo
-            if (!this.IsMain)
-                ((WebView)this.WebView).Children.Add(this);
-
-            // Establecer WebView del plugin de la ventana principal, es padre de si misma
-            if (this.IsMain)
-            {
-                PropertyInfo? prop = typeof(Plugin).GetProperty("WebView", BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.FlattenHierarchy);
-                MethodInfo? setter = prop?.GetSetMethod(nonPublic: true);
-                setter?.Invoke(this, new object[] { this });
-            }
+            this.InternalWindow = new Window(Helpers.CreateContext(this, Logger, typeof(Window).Name, source));
+            this.InternalBrowser = new Browser(Helpers.CreateContext(this, Logger, typeof(Browser).Name, source), language);
+            this.InternalPrintManager = new PrintManager(Helpers.CreateContext(this, Logger, typeof(PrintManager).Name, source));
         }
 
         [MemberNotNull(nameof(WVUIContext))]
@@ -242,11 +236,13 @@ namespace WV.Win.Imp
             }
             catch (ArgumentException ex)
             {
+                this.Logger.Critical("Failed to initialize WV.js", ex);
                 User32.MessageBox(hwnd, $"Failed to initialize WV.js: {System.Environment.NewLine}{ex.Message}", "Error", (uint)(MsgBoxStyle.MB_OK | MsgBoxStyle.MB_ICONERROR));
                 System.Environment.Exit(1);
             }
             catch (Exception ex)
             {
+                this.Logger.Critical("Failed to initialize WV.js", ex);
                 User32.MessageBox(hwnd, $"Failed to initialize WV.js: {System.Environment.NewLine}{ex}", "Error", (uint)(MsgBoxStyle.MB_OK | MsgBoxStyle.MB_ICONERROR));
                 System.Environment.Exit(1);
             }
@@ -393,7 +389,7 @@ namespace WV.Win.Imp
 
         private void RegisterWebViewEvents(WebView wv, CoreWebView2 coreWV2)
         {
-            CoreWebView2Controller WVController = wv.WVController!;
+            var WVController = wv.WVController!;
 
             // Evento para manejar OnZoomFactoChanged de JS
             WVController.ZoomFactorChanged += WV_ZoomFactorChanged;
@@ -401,7 +397,7 @@ namespace WV.Win.Imp
             // Se hace disparar el evento, para obtener el ZoomFactor Maximo
             WVController.ZoomFactor = double.MaxValue;
 
-            //=====================================================//
+            //----------------------------//
 
             coreWV2.ContextMenuRequested += WV2_ContextMenuRequested;
             coreWV2.IsMutedChanged += WV2_IsMutedChanged;
@@ -433,6 +429,8 @@ namespace WV.Win.Imp
 
         #endregion
 
+        //==========================================//
+
         #region WndProc
 
         // Controla los mensajes de la ventana principal (padre)
@@ -446,26 +444,24 @@ namespace WV.Win.Imp
 
         #endregion
 
-        
-        
+        //==========================================//
 
-        #region METHODS
-
-        #region NewPluginInstance
+        #region PLUGINS
 
         public object NewPluginInstance(string pluginName, params object[] args)
         {
-            Plugin.ThrowDispose(this);
+            Plugin.ThrowIfDisposed(this);
 
             PluginLoader? ctxPlugin = null;
 
             if (pluginName != this.Name && !this.ImportedPlugins.TryGetValue(pluginName, out ctxPlugin))
-                throw new Exception("Plugin [" + pluginName + "] no exists");
+                throw new Exception($"Plugin [{pluginName}] no exists");
 
             Type pluginType = ctxPlugin != null ? ctxPlugin.Type : typeof(WebView);
+            IContext ctx = Helpers.CreateContext(this, Logger, pluginName, $"{Logger.Source}:Plugin", PluginDisposedEvent);
 
             List<object> Args = args.ToList();
-            Args.Insert(0, this); // Constructor(WebView, arg1, arg2, ...)
+            Args.Insert(0, ctx); // Constructor(Context, arg1, arg2, ...)
 
             // Verifica si el plugin está marcado como singleton. Usa GetOrAdd para asegurar atomicidad y threadsafety
             if (pluginType.GetCustomAttribute<SingletonAttribute>() != null)
@@ -486,13 +482,94 @@ namespace WV.Win.Imp
             return pluginInstance;
         }
 
-        #endregion
-
         public object GetPluginInstance(string UID)
         {
-            Plugin.ThrowDispose(this);
+            Plugin.ThrowIfDisposed(this);
             return this.PluginInstances[UID];
         }
+
+        public string[] LoadPluginsFromFolder(string foldePath = "")
+        {
+            Plugin.ThrowIfDisposed(this);
+
+            if(string.IsNullOrWhiteSpace(foldePath))
+                foldePath = AppManager.PluginsPath;
+
+            if (!Directory.Exists(foldePath))
+                throw new Exception($"The directory [{foldePath}] does not exist");
+
+            List<string> dllError = new List<string>();
+
+            foreach (string assemblyFile in Directory.GetFiles(foldePath, "*.dll", SearchOption.AllDirectories))
+                try { this.LoadPlugin(assemblyFile); }
+                catch (Exception ex) { dllError.Add(ex.Message); }
+            
+            return dllError.ToArray();
+        }
+
+        public string LoadPlugin(string pluginPath)
+        {
+            Plugin.ThrowIfDisposed(this);
+            
+            try
+            {
+                var ctx = new PluginLoader(pluginPath, this.RootPath);
+                var type = ctx.Load();
+
+                if (this.ImportedPlugins.ContainsKey(type.Name))
+                {
+                    ctx.Unload();
+                    throw new Exception($"The '{type.Name}' plugin has already been loaded");
+                }
+                    
+                this.ImportedPlugins.Add(type.Name, ctx);
+                return type.Name;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"DLL: '{pluginPath}' - ERROR: {ex.Message}");
+            }
+        }
+
+        public void UnloadPlugin(string pluginName)
+        {
+            Plugin.ThrowIfDisposed(this);
+
+            if (!this.ImportedPlugins.ContainsKey(pluginName))
+                throw new Exception($"[{pluginName}] Plugin not found.");
+
+            var ctx = this.ImportedPlugins[pluginName];
+            
+            var instances = this.PluginInstances.Where(i => ctx.Type == i.Value.GetType()).ToList();
+
+            // Verificar si existe alguna instancia sin hacer Dispose()
+            foreach (Plugin item in this.PluginInstances.Values)
+                if(!item.Disposed)
+                    throw new Exception($"The [{pluginName}] plugin cannot be unloaded while instances remain undisposed. {Environment.NewLine} Instance UID = {item.UID}");
+
+            foreach (var instance in instances)
+                this.PluginInstances.Remove(instance.Key);
+            
+            // Puede que sea un plugin Singleton
+            this.SingletonInstances.TryRemove(ctx.Type, out object? _);
+                
+            ctx.Unload();
+            this.ImportedPlugins.Remove(pluginName);
+        }
+
+        private ILogger CreateScopeLogger(string source)
+        {
+            if(this.IsMain)
+                return ((Logger.Logger)this.Logger).ForSource(source);
+            else
+                return ((Logger.ScopedLogger)this.Logger).ForSource(source);
+        }
+
+        #endregion
+
+        //==========================================//
+
+        #region LIFETIME
 
         public void Restart()
         {
@@ -531,91 +608,20 @@ namespace WV.Win.Imp
             Environment.Exit(0);
         }
 
-        public string[] LoadPluginsFromFolder(string foldePath = "")
-        {
-            Plugin.ThrowDispose(this);
-
-            if(string.IsNullOrWhiteSpace(foldePath))
-                foldePath = AppManager.PluginsPath;
-
-            if (!Directory.Exists(foldePath))
-                throw new Exception($"The directory [{foldePath}] does not exist");
-
-            List<string> dllError = new List<string>();
-
-            foreach (string assemblyFile in Directory.GetFiles(foldePath, "*.dll", SearchOption.AllDirectories))
-                try { this.LoadPlugin(assemblyFile); }
-                catch (Exception ex) { dllError.Add(ex.Message); }
-            
-            return dllError.ToArray();
-        }
-
-        public string LoadPlugin(string pluginPath)
-        {
-            Plugin.ThrowDispose(this);
-            
-            try
-            {
-                var ctx = new PluginLoader(pluginPath, this.RootPath);
-                var type = ctx.Load();
-
-                if (this.ImportedPlugins.ContainsKey(type.Name))
-                {
-                    ctx.Unload();
-                    throw new Exception($"The '{type.Name}' plugin has already been loaded");
-                }
-                    
-                this.ImportedPlugins.Add(type.Name, ctx);
-                return type.Name;
-            }
-            catch (Exception ex)
-            {
-                throw new Exception($"DLL: '{pluginPath}' - ERROR: {ex.Message}");
-            }
-        }
-
-        public void UnloadPlugin(string pluginName)
-        {
-            Plugin.ThrowDispose(this);
-
-            if (!this.ImportedPlugins.ContainsKey(pluginName))
-                throw new Exception($"[{pluginName}] Plugin not found.");
-
-            var ctx = this.ImportedPlugins[pluginName];
-            
-            var instances = this.PluginInstances.Where(i => ctx.Type == i.Value.GetType()).ToList();
-
-            // Verificar si existe alguna instancia sin hacer Dispose()
-            foreach (Plugin item in this.PluginInstances.Values)
-                if(!item.Disposed)
-                    throw new Exception($"The [{pluginName}] plugin cannot be unloaded while instances remain undisposed. {Environment.NewLine} Instance UID = {item.UID}");
-
-            foreach (var instance in instances)
-                this.PluginInstances.Remove(instance.Key);
-            
-            // Puede que sea un plugin Singleton
-            this.SingletonInstances.TryRemove(ctx.Type, out object? _);
-                
-            ctx.Unload();
-            this.ImportedPlugins.Remove(pluginName);
-        }
-
-        #endregion
-
         // Se lanza cuando se recarga el WebView
         internal void CleanMyself()
         {
             // Destruir/vaciar todos los eventos de IWindow
-            this.InternalWindow.ClearEvents();
+            this.InternalWindow.ClearAllEvents();
 
             // Destruir/vaciar todos los eventos de IBrowser
-            this.InternalBrowser.ClearEvents();
+            this.InternalBrowser.ClearAllEvents();
 
             // Destruir/vaciar todos los eventos de IContextMenu
             this.InternalBrowser.InternalContextMenu.ClearEvents();
 
             // Destruir/vaciar todos los eventos de IPrintManager
-            this.InternalPrintManager.ClearEvents();
+            this.InternalPrintManager.ClearAllEvents();
 
             //-------------------------//
 
@@ -665,6 +671,36 @@ namespace WV.Win.Imp
             // Eliminar instancia del diccionario
             Helpers.WinInstances.Remove(this.Handle);
 
+            var WVController = this.WVController!;
+            var coreWV2 = WVController.CoreWebView2;
+
+            // Evento para manejar OnZoomFactoChanged de JS
+            WVController.ZoomFactorChanged -= WV_ZoomFactorChanged;
+
+            //----------------------------//
+
+            coreWV2.ContextMenuRequested -= WV2_ContextMenuRequested;
+            coreWV2.IsMutedChanged -= WV2_IsMutedChanged;
+            coreWV2.IsDocumentPlayingAudioChanged -= WV2_IsDocumentPlayingAudioChanged;
+            coreWV2.StatusBarTextChanged -= CoreWV2_StatusBarTextChanged;
+            coreWV2.NavigationStarting -= WV2_NavigationStarting;   //Evento "reload" para cuando se pulsa F5
+            
+            coreWV2.WebResourceRequested -= WV2_ResourceRequested;
+
+            //----------------------------//
+
+            coreWV2.NewWindowRequested -= CoreWV2_NewWindowRequested;
+            //coreWV2.ProcessFailed -= WV2_ProcessFailed;
+            //coreWV2.WebMessageReceived -= WV2_WebMessageReceived;
+            //coreWV2.FrameCreated -= WV2_FrameCreated;
+            coreWV2.PermissionRequested -= WV2_PermissionRequested;
+
+            //coreWV2.ContentLoading -= WV2_ContentLoading;
+            //coreWV2.DOMContentLoaded -= WV2_DOMContentLoaded;
+            coreWV2.NavigationCompleted -= WV2_NavigationCompleted;
+
+            coreWV2.ScreenCaptureStarting -= WV2_ScreenCaptureStarting;
+
             this.WVController?.Close();
             this.WVController = null;
 
@@ -672,14 +708,7 @@ namespace WV.Win.Imp
             this.InternalWindow.Close();
         }
 
-        private void PluginDisposed(string UID)
-        {
-            if (!this.PluginInstances.TryGetValue(UID, out object? instance))
-                return;
-
-            this.PluginInstances.Remove(UID);
-            this.SingletonInstances.TryRemove(instance.GetType(), out object? _);
-        }
+        #endregion
 
         //==========================================//
 
@@ -978,6 +1007,15 @@ namespace WV.Win.Imp
         {
             // Evitar asi que se habrán otras ventanas NO deseadas explicitamente. con el New Window de JS
             e.Handled = true;
+        }
+
+        private void PluginDisposedEvent(string UID)
+        {
+            if (!this.PluginInstances.TryGetValue(UID, out object? instance))
+                return;
+
+            this.PluginInstances.Remove(UID);
+            this.SingletonInstances.TryRemove(instance.GetType(), out object? _);
         }
 
         #endregion

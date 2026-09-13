@@ -7,90 +7,53 @@ namespace WV.Win.Imp
 {
     public class Browser : Plugin, IBrowser
     {
-        private WebView WV { get; }
-        private CoreWebView2? CoreWV2 => this.WV.WVController != null ? this.WV.WVController.CoreWebView2 : null;
-
-        #region CS EVENTS
-
-        private event WVEventHandler<bool>? playingAudioEvent;
-        public event WVEventHandler<bool>? PlayingAudio
-        {
-            add
-            {
-                ThrowDispose();
-                playingAudioEvent += value;
-            }
-            remove
-            {
-                ThrowDispose();
-                playingAudioEvent -= value;
-            }
-        }
-
-        private event WVEventHandler<bool>? mutedEvent;
-        public event WVEventHandler<bool>? MutedEvent
-        {
-            add
-            {
-                ThrowDispose();
-                mutedEvent += value;
-            }
-            remove
-            {
-                ThrowDispose();
-                mutedEvent -= value;
-            }
-        }
-
-        private event WVEventHandler<double>? zoomFactorChangedEvent;
-        public event WVEventHandler<double>? ZoomFactorChanged
-        {
-            add
-            {
-                ThrowDispose();
-                zoomFactorChangedEvent += value;
-            }
-            remove
-            {
-                ThrowDispose();
-                zoomFactorChangedEvent -= value;
-            }
-        }
-
-        private event WVEventHandler<string>? statusBarTextChangedEvent;
-        public event WVEventHandler<string>? StatusBarTextChanged
-        {
-            add 
-            {
-                ThrowDispose();
-                statusBarTextChangedEvent += value;
-            }
-            remove 
-            {
-                ThrowDispose();
-                statusBarTextChangedEvent -= value;
-            }
-        }
-
-        #endregion
+        private WebView WV => (WebView)this.WebView;
+        private CoreWebView2Controller WVController => this.WV.WVController!;
+        private CoreWebView2 CoreWV2 => this.WVController.CoreWebView2;
 
         internal ContextMenu InternalContextMenu { get; }
 
-        public Browser(WebView wv, string? language) : base(wv)
+        //=======================================//
+
+        #region Events
+
+        public event WVEventHandler<bool>? PlayingAudio;
+        public event WVEventHandler<bool>? MutedEvent;
+        public event WVEventHandler<double>? ZoomFactorChanged;
+        public event WVEventHandler<string>? StatusBarTextChanged;
+
+        #endregion
+
+        //=======================================//
+
+        #region Fields
+
+        private double _MinZoomFactor = 0;
+        private double _MaxZoomFactor = 0;
+        private bool _ResetWebViewOnReload;
+
+        // Hot Reload
+        private Timer? _debounceTimer;
+        private object _lock = new object();
+        private FileSystemWatcher? _watcher;
+        public bool _HotReload;
+
+        #endregion
+
+        public Browser(IContext ctx, string? language) : base(ctx)
         {
-            this.WV = wv;
             this.Language =  Helpers.GetLanguage(language);
-            this.InternalContextMenu = new ContextMenu(wv);
+            this.InternalContextMenu = new ContextMenu(this.WV);
         }
 
-        #region PROPS
+        #region Properties
 
         public string Uri 
         { 
             get
             {
-                ThrowDispose();
-                return this.CoreWV2 != null ? this.CoreWV2.Source : string.Empty;
+                ThrowIfDisposed();
+                return this.CoreWV2.Source;
             }
             
         }
@@ -99,8 +62,8 @@ namespace WV.Win.Imp
         {
             get
             {
-                ThrowDispose();
-                return this.CoreWV2 != null ? this.CoreWV2.CanGoBack : false;
+                ThrowIfDisposed();
+                return this.CoreWV2.CanGoBack;
             }
         }  
 
@@ -108,8 +71,8 @@ namespace WV.Win.Imp
         {
             get
             {
-                ThrowDispose();
-                return this.CoreWV2 != null ? this.CoreWV2.CanGoForward : false;
+                ThrowIfDisposed();
+                return this.CoreWV2.CanGoForward;
             }
         } 
 
@@ -117,19 +80,22 @@ namespace WV.Win.Imp
         {
             get
             {
-                ThrowDispose();
-                return this.CoreWV2 != null ? this.CoreWV2.IsDocumentPlayingAudio : false;
+                ThrowIfDisposed();
+                return this.CoreWV2.IsDocumentPlayingAudio;
             }
         } 
 
         public bool StatusBar
         {
-            get => this.CoreWV2 != null ? this.CoreWV2.Settings.IsStatusBarEnabled : true;
-
+            get
+            {
+                ThrowIfDisposed();
+                return this.CoreWV2.Settings.IsStatusBarEnabled;
+            }
             set
             {
-                if (this.CoreWV2 != null)
-                    this.CoreWV2.Settings.IsStatusBarEnabled = value;
+                ThrowIfDisposed();
+                this.CoreWV2.Settings.IsStatusBarEnabled = value;
             }
         }
 
@@ -137,15 +103,14 @@ namespace WV.Win.Imp
         {
             get 
             {
-                ThrowDispose();
-                return this.CoreWV2 != null ? this.CoreWV2.Settings.AreBrowserAcceleratorKeysEnabled : true;
+                ThrowIfDisposed();
+                return this.CoreWV2.Settings.AreBrowserAcceleratorKeysEnabled;
             } 
 
             set
             {
-                ThrowDispose();
-                if (this.CoreWV2 != null)
-                    this.CoreWV2.Settings.AreBrowserAcceleratorKeysEnabled = value;
+                ThrowIfDisposed();
+                this.CoreWV2.Settings.AreBrowserAcceleratorKeysEnabled = value;
             }
         }
 
@@ -153,35 +118,27 @@ namespace WV.Win.Imp
         {
             get 
             {
-                ThrowDispose();
-                return this.CoreWV2 != null ? this.CoreWV2.Settings.IsSwipeNavigationEnabled : false;
+                ThrowIfDisposed();
+                return this.CoreWV2.Settings.IsSwipeNavigationEnabled;
             } 
 
             set
             {
-                ThrowDispose();
-
-                if (this.CoreWV2 != null)
-                    this.CoreWV2.Settings.IsSwipeNavigationEnabled = value;
+                ThrowIfDisposed();
+                this.CoreWV2.Settings.IsSwipeNavigationEnabled = value;
             }
         }
 
-        #region HotReload
-
-        private Timer? _debounceTimer;
-        private object _lock = new object();
-        private FileSystemWatcher? _watcher;
-        public bool _HotReload;
         public bool HotReload
         {
             get 
             {
-                ThrowDispose();
+                ThrowIfDisposed();
                 return _HotReload;
             }
             set
             {
-                ThrowDispose();
+                ThrowIfDisposed();
 
                 _HotReload = value;
 
@@ -195,7 +152,7 @@ namespace WV.Win.Imp
                     try
                     {
                         // En el constructor o método de inicialización:
-                        _debounceTimer = new Timer(ExecuteDelayedEvent, null, Timeout.Infinite, Timeout.Infinite);
+                        _debounceTimer = new Timer(HotReload_DelayedEvent, null, Timeout.Infinite, Timeout.Infinite);
 
                         _watcher = new FileSystemWatcher(StaticPath)
                         {
@@ -210,10 +167,10 @@ namespace WV.Win.Imp
                         };
 
                         
-                        _watcher.Changed += HotReloadRefresh;
-                        _watcher.Deleted += HotReloadRefresh;
-                        _watcher.Renamed += HotReloadRefresh;
-                        _watcher.Error += Event_HotReloadError;
+                        _watcher.Changed += HotReload_Refresh;
+                        _watcher.Deleted += HotReload_Refresh;
+                        _watcher.Renamed += HotReload_Refresh;
+                        _watcher.Error += HotReload_Error;
                     }
                     catch (Exception)
                     {
@@ -230,102 +187,76 @@ namespace WV.Win.Imp
                 _debounceTimer?.Dispose();
                 _debounceTimer = null;
 
-                _watcher.Changed -= HotReloadRefresh;
-                _watcher.Deleted -= HotReloadRefresh;
-                _watcher.Error -= Event_HotReloadError;
+                _watcher.Changed -= HotReload_Refresh;
+                _watcher.Deleted -= HotReload_Refresh;
+                _watcher.Error -= HotReload_Error;
                 _watcher.EnableRaisingEvents = false;
                 _watcher.Dispose();
                 _watcher = null;
             }
         }
 
-        private void HotReloadRefresh(object sender, FileSystemEventArgs e)
-        {
-            lock (_lock)
-            {
-                _debounceTimer?.Change(Timeout.Infinite, Timeout.Infinite); // Cancelar timer existente
-                _debounceTimer?.Change(100, Timeout.Infinite); // Reiniciar con 100 ms de delay
-            }
-        }
-
-        private void ExecuteDelayedEvent(object? state)
-        {
-            this.WV.WVUIContext?.Post(x => this.HardReload(), null);
-        }
-
-        private void Event_HotReloadError(object sender, ErrorEventArgs e)
-        {
-            this.WV.WVUIContext?.Post(x =>
-                this.ExecuteScriptAsync("alert(`" + e.ToString() + "`);")
-            , null);
-        }
-
-        #endregion
-
-        #region ResetWebViewOnReload
-
-        private bool _ResetWebViewOnReload;
         public bool ResetWebViewOnReload 
         { 
             get
             {
-                ThrowDispose();
+                ThrowIfDisposed();
                 return _ResetWebViewOnReload;
             }
             set
             {
-                ThrowDispose();
+                ThrowIfDisposed();
                 this._ResetWebViewOnReload = value;
             }
         }
-
-        #endregion
 
         public bool Muted
         {
             get 
             {
-                ThrowDispose();
-                return this.CoreWV2 != null ? this.CoreWV2.IsMuted : false;
+                ThrowIfDisposed();
+                return this.CoreWV2.IsMuted;
             } 
             set
             {
-                ThrowDispose();
-                if (this.CoreWV2 != null)
-                    this.CoreWV2.IsMuted = value;
+                ThrowIfDisposed();
+                this.CoreWV2.IsMuted = value;
             }
         }
 
-        public IContextMenu ContextMenu => this.InternalContextMenu;
+        public IContextMenu ContextMenu
+        {
+            get
+            {
+                ThrowIfDisposed();
+                return this.InternalContextMenu;
+            }
+        }
 
-        #region ZoomFactor
-
-        private double _MaxZoomFactor = 0;
         public double MaxZoomFactor
         {
             get
             {
-                ThrowDispose();
+                ThrowIfDisposed();
                 return _MaxZoomFactor;
             }
             internal set
             {
-                ThrowDispose();
+                ThrowIfDisposed();
                 _MaxZoomFactor = value;
             }
         }
 
-        private double _MinZoomFactor = 0;
         public double MinZoomFactor 
         { 
             get
             {
-                ThrowDispose();
+                ThrowIfDisposed();
                 return _MinZoomFactor;
             }
             internal set
             {
-                ThrowDispose();
+                ThrowIfDisposed();
                 _MinZoomFactor = value;
             }
         }
@@ -334,15 +265,12 @@ namespace WV.Win.Imp
         {
             get 
             {
-                ThrowDispose();
-                return this.WV.WVController != null ? this.WV.WVController.ZoomFactor : 1;
+                ThrowIfDisposed();
+                return this.WVController.ZoomFactor;
             } 
             set
             {
-                ThrowDispose();
-
-                if (this.WV.WVController == null)
-                    return;
+                ThrowIfDisposed();
 
                 if (value < this.MinZoomFactor)
                     value = this.MinZoomFactor;
@@ -350,10 +278,10 @@ namespace WV.Win.Imp
                 else if(value > this.MaxZoomFactor)
                     value = this.MaxZoomFactor;
 
-                if (this.WV.WVController.ZoomFactor == value)
+                if (this.WVController.ZoomFactor == value)
                     return;
 
-                this.WV.WVController.ZoomFactor = value;
+                this.WVController.ZoomFactor = value;
 
                 // El evento Nativo NO se dispara cuando el ZoomFactor seteado está dentro del rango maximo y minimo
                 // Lo disparamos cuando eso suceda
@@ -362,40 +290,28 @@ namespace WV.Win.Imp
             }
         }
 
-        #endregion
-
         public string StatusBarText
         {
             get
             {
-                ThrowDispose();
-                return this.CoreWV2 != null ? this.CoreWV2.StatusBarText : string.Empty;
+                ThrowIfDisposed();
+                return this.CoreWV2.StatusBarText;
             }
         }
 
         public string Language { get; }
 
-        #region ColorScheme
-
         public BrowserColorScheme ColorScheme 
         { 
             get
             {
-                ThrowDispose();
-
-                if(this.WV.WVController == null)
-                    return BrowserColorScheme.Auto;
-
-                return (BrowserColorScheme)this.WV.WVController.CoreWebView2.Profile.PreferredColorScheme;
+                ThrowIfDisposed();
+                return (BrowserColorScheme)this.WVController.CoreWebView2.Profile.PreferredColorScheme;
             }
             set
             {
-                ThrowDispose();
-
-                if (this.WV.WVController == null)
-                    return;
-
-                this.WV.WVController.CoreWebView2.Profile.PreferredColorScheme = (CoreWebView2PreferredColorScheme)value;
+                ThrowIfDisposed();
+                this.WVController.CoreWebView2.Profile.PreferredColorScheme = (CoreWebView2PreferredColorScheme)value;
             }
         }
 
@@ -411,24 +327,19 @@ namespace WV.Win.Imp
 
         #endregion
 
-        #endregion
+        //=======================================//
 
-        //-------------------------------------------//
-
-        #region METHODS
+        #region Methods
 
         public void OpenDevTools()
         {
-            ThrowDispose();
-            this.CoreWV2?.OpenDevToolsWindow();
+            ThrowIfDisposed();
+            this.CoreWV2.OpenDevToolsWindow();
         }
 
         public async Task<string> CallDevToolsProtocolAsync(string method, string? parametersAsJson = null)
         {
-            ThrowDispose();
-
-            if (this.CoreWV2 == null)
-                return string.Empty;
+            ThrowIfDisposed();
 
             if (parametersAsJson == null)
                 parametersAsJson = "{}";
@@ -438,236 +349,63 @@ namespace WV.Win.Imp
 
         public void Navigate(string uri)
         {
-            ThrowDispose();
-            this.CoreWV2?.Navigate(uri);
+            ThrowIfDisposed();
+            this.CoreWV2.Navigate(uri);
         }
 
         public void Reload()
         {
-            ThrowDispose();
+            ThrowIfDisposed();
             Aux_Reload(false);
         }
 
         public void HardReload()
         {
-            ThrowDispose();
+            ThrowIfDisposed();
             //this.WV.CleanFileCache();
             Aux_Reload(true);
         }
 
         public Task<string>? ExecuteScriptAsync(string javaScript)
         {
-            ThrowDispose();
-            return this.CoreWV2?.ExecuteScriptAsync(javaScript);
+            ThrowIfDisposed();
+            return this.CoreWV2.ExecuteScriptAsync(javaScript);
         }
 
         public void GoBack()
         {
-            ThrowDispose();
-            this.CoreWV2?.GoBack();
+            ThrowIfDisposed();
+            this.CoreWV2.GoBack();
         }
 
         public void GoForward()
         {
-            ThrowDispose();
-            this.CoreWV2?.GoForward();
+            ThrowIfDisposed();
+            this.CoreWV2.GoForward();
         }
 
         #endregion
 
-        //-------------------------------------------//
+        //=======================================//
 
-        #region EVENTS
+        #region Protected Methods
 
-        #region OnPlayingAudio
-
-        private IJSFunction? OnPlayingAudioFN { get; set; }
-
-        public object? OnPlayingAudio
+        protected override void ThrowIfDisposed()
         {
-            get 
-            {
-                ThrowDispose();
-                return OnPlayingAudioFN?.Raw;
-            } 
-            set
-            {
-                ThrowDispose();
-
-                if (value == OnPlayingAudioFN?.Raw)
-                    return;
-
-                this.OnPlayingAudioFN?.Dispose();
-                this.OnPlayingAudioFN = null;
-
-                if (value == null)
-                    return;
-
-                this.OnPlayingAudioFN = IJSFunction.Create(value);
-            }
-        }
-
-        internal void FirePlayingAudioEvent()
-        {
-            bool isPlayingAudio = this.IsPlayingAudio;
-            this.OnPlayingAudioFN?.Execute(isPlayingAudio);
-            this.playingAudioEvent?.Invoke(this.WV, isPlayingAudio);
+            base.ThrowIfDisposed();
+            Plugin.ThrowIfDisposed(this.WV);
         }
 
         #endregion
 
-        #region OnMuted
+        //=======================================//
 
-        private IJSFunction? OnMutedFN { get; set; }
+        #region Internal Methods
 
-        public object? OnMuted
+        internal void ClearAllEvents()
         {
-            get 
-            {
-                ThrowDispose();
-                return OnMutedFN?.Raw;
-            } 
-            set
-            {
-                ThrowDispose();
-
-                if (value == OnMutedFN?.Raw)
-                    return;
-
-                this.OnMutedFN?.Dispose();
-                this.OnMutedFN = null;
-
-                if (value == null)
-                    return;
-
-                this.OnMutedFN = IJSFunction.Create(value);
-            }
-        }
-
-        internal void FireMutedEvent()
-        {
-            bool muted = this.Muted;
-            this.OnMutedFN?.Execute(muted);
-            this.mutedEvent?.Invoke(this.WV, muted);
-        }
-
-        #endregion
-
-        #region OnZoomFactorChanged
-
-        private IJSFunction? OnZoomFactorChangedFN { get; set; }
-
-        public object? OnZoomFactorChanged
-        {
-            get 
-            {
-                ThrowDispose();
-                return OnZoomFactorChangedFN?.Raw;
-            } 
-            set
-            {
-                ThrowDispose();
-
-                if (value == OnZoomFactorChangedFN?.Raw)
-                    return;
-
-                this.OnZoomFactorChangedFN?.Dispose();
-                this.OnZoomFactorChangedFN = null;
-
-                if (value == null)
-                    return;
-
-                this.OnZoomFactorChangedFN = IJSFunction.Create(value);
-            }
-        }
-
-        internal void FireZoomFactorChangedEvent()
-        {
-            double factor = this.ZoomFactor;
-
-            // Para cuando se recargue el WV se mantenga el ultimo ZoomFactor
-            if(this.WV.WVController != null)
-                this.WV.WVController.ZoomFactor = factor;
-
-            this.OnZoomFactorChangedFN?.Execute(factor);
-            this.zoomFactorChangedEvent?.Invoke(this.WV, factor);
-        }
-
-        #endregion
-
-        #region OnStatusBarTextChanged
-
-        private IJSFunction? OnStatusBarTextChangedFN { get; set; }
-
-        public object? OnStatusBarTextChanged
-        {
-            get
-            {
-                ThrowDispose();
-                return OnStatusBarTextChangedFN?.Raw;
-            }
-            set
-            {
-                ThrowDispose();
-
-                if (value == OnStatusBarTextChangedFN?.Raw)
-                    return;
-
-                this.OnStatusBarTextChangedFN?.Dispose();
-                this.OnStatusBarTextChangedFN = null;
-
-                if (value == null)
-                    return;
-
-                this.OnStatusBarTextChangedFN = IJSFunction.Create(value);
-            }
-        }
-
-        internal void FireStatusBarTextChangedEvent()
-        {
-            string text = this.StatusBarText;
-
-            this.OnStatusBarTextChangedFN?.Execute(text);
-            this.statusBarTextChangedEvent?.Invoke(this.WV, text);
-        }
-
-        #endregion
-
-        #endregion
-
-        private void ThrowDispose()
-        {
-            Plugin.ThrowDispose(this.WV);
-        }
-
-        private void Aux_Reload(bool ignoreCache)
-        {
-            this.CoreWV2?.CallDevToolsProtocolMethodAsync("Page.reload", @"{""ignoreCache"":" + ignoreCache.ToString().ToLower() + "}");
-        }
-
-        internal void ClearEvents()
-        {
-            this.CleanJSEvents();
-
-            this.playingAudioEvent = null;
-            this.mutedEvent = null;
-            this.zoomFactorChangedEvent = null;
-            this.statusBarTextChangedEvent = null;
-
-            this.OnPlayingAudioFN = null;
-            this.OnMutedFN = null;
-            this.OnZoomFactorChanged = null;
-            this.OnStatusBarTextChanged = null;
-        }
-
-        protected override void Dispose(bool disposing)
-        {
-            //throw new NotImplementedException();
-        }
-
-        public override void Dispose()
-        {
-            //base.Dispose();
+            this.ClearListeners();
+            this.ClearEvents();
         }
 
         internal void ToDefault()
@@ -685,6 +423,81 @@ namespace WV.Win.Imp
 
             this.InternalContextMenu.ToDefault();
         }
+
+        internal void FireMutedEvent()
+        {
+            if (this.Disposed)
+                return;
+
+            bool muted = this.Muted;
+            this.MutedEvent?.Invoke(this.WV, muted);
+        }
+
+        internal void FirePlayingAudioEvent()
+        {
+            if (this.Disposed)
+                return;
+
+            bool isPlayingAudio = this.IsPlayingAudio;
+            this.PlayingAudio?.Invoke(this.WV, isPlayingAudio);
+        }
+
+        internal void FireStatusBarTextChangedEvent()
+        {
+            if (this.Disposed)
+                return;
+
+            string text = this.StatusBarText;
+            this.StatusBarTextChanged?.Invoke(this.WV, text);
+        }
+
+        internal void FireZoomFactorChangedEvent()
+        {
+            if (this.Disposed)
+                return;
+
+            double factor = this.ZoomFactor;
+
+            // Para cuando se recargue el WV se mantenga el ultimo ZoomFactor
+            if (this.WV.WVController != null)
+                this.WV.WVController.ZoomFactor = factor;
+
+            this.ZoomFactorChanged?.Invoke(this.WV, factor);
+        }
+
+        #endregion
+
+        //=======================================//
+
+        #region Private Methods
+
+        private void Aux_Reload(bool ignoreCache)
+        {
+            this.CoreWV2.CallDevToolsProtocolMethodAsync("Page.reload", @"{""ignoreCache"":" + ignoreCache.ToString().ToLower() + "}");
+        }
+
+        private void HotReload_Refresh(object sender, FileSystemEventArgs e)
+        {
+            lock (_lock)
+            {
+                _debounceTimer?.Change(Timeout.Infinite, Timeout.Infinite); // Cancelar timer existente
+                _debounceTimer?.Change(100, Timeout.Infinite); // Reiniciar con 100 ms de delay
+            }
+        }
+
+        private void HotReload_DelayedEvent(object? state)
+        {
+            this.WV.WVUIContext?.Post(x => this.HardReload(), null);
+        }
+
+        private void HotReload_Error(object sender, ErrorEventArgs e)
+        {
+            this.WV.WVUIContext?.Post(x =>
+                this.ExecuteScriptAsync("alert(`" + e.ToString() + "`);")
+            , null);
+        }
+
+        #endregion
 
     }
 }

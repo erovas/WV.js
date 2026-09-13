@@ -5,13 +5,28 @@ namespace WV
 {
     public static class AppManager
     {
+        #region Delegates
+
         public delegate void WVEventHandler(IWebView sender);
         public delegate void WVEventHandler<T1>(IWebView sender, T1 arg);
         public delegate void WVEventHandler<T1, T2>(IWebView sender, T1 arg1, T2 arg2);
         public delegate void WVEventHandler<T1, T2, T3>(IWebView sender, T1 arg1, T2 arg2, T3 arg3);
         public delegate void WVEventHandler<T1, T2, T3, T4>(IWebView sender, T1 arg1, T2 arg2, T3 arg3, T4 arg4);
-
         public delegate void WVSysEventHandler(IWebView sender, object[] args, ref bool handled);
+
+        #endregion
+
+        #region Constants
+
+        public const int MaxWindowWidth = int.MaxValue;
+        public const int MaxWindowHeight = int.MaxValue;
+        public const int MinWindowWidth = 136;
+        public const int MinWindowHeight = 39;
+        public const string Domain = "WV.js";
+
+        #endregion
+
+        #region Properties
 
         /// <summary>
         /// UserData development folder path
@@ -39,20 +54,25 @@ namespace WV
         public static string Platform { get; }
 
         /// <summary>
-        /// 
+        /// Gets a boolean that indicates whether the application is in debug mode
         /// </summary>
-        //public static string? Language { get; set; }
+        public static bool IsDebugging { get; }
 
+        /// <summary>
+        /// Gets a boolean indicating that the application has started
+        /// </summary>
+        public static bool IsInitialized { get; private set; }
 
-        public static bool IsDebugging {  get; }
-        
+        #endregion
 
-        public const int MaxWindowWidth = int.MaxValue;
-        public const int MaxWindowHeight = int.MaxValue;
-        public const int MinWindowWidth = 136;
-        public const int MinWindowHeight = 39;
-        public const string Domain = "WV.js";
+        #region Methods
 
+        public static void Initialized()
+        {
+            IsInitialized = true;
+        }
+
+        #endregion
 
         static AppManager()
         {

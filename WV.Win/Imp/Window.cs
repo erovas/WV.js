@@ -5,162 +5,68 @@ using System.Drawing;
 using WV.Win.Win32.Enums;
 using WV.Win.Win32.Structs;
 using static WV.AppManager;
-using System.Runtime.InteropServices;
 using Microsoft.Web.WebView2.Core;
+using System.Runtime.InteropServices;
 
 namespace WV.Win.Imp
 {
     public class Window : Plugin, IWindow
     {
-        private WebView WV { get; }
+        private WebView WV => (WebView)this.WebView;
         private IntPtr Handle => this.WV.Handle;
         internal Rect InternalRect { get; }
 
-        //-------------------------------------------//
+        //=======================================//
 
-        #region CS Events
+        #region Events
 
-        private event WVEventHandler<WindowState, string>? stateChangedEvent;
-        public event WVEventHandler<WindowState, string>? StateChanged
-        {
-            add
-            {
-                Plugin.ThrowDispose(this.WV);
-                stateChangedEvent += value;
-            }
-            remove
-            {
-                Plugin.ThrowDispose(this.WV);
-                stateChangedEvent -= value;
-            }
-        }
+        public event WVEventHandler<WindowState, string>? StateChanged;
+        
+        public event WVEventHandler? Closing;
 
-        private event WVEventHandler? closeEvent;
-        public event WVEventHandler? Closing
-        {
-            add
-            {
-                Plugin.ThrowDispose(this.WV);
-                closeEvent += value;
-            }
-            remove
-            {
-                Plugin.ThrowDispose(this.WV);
-                closeEvent -= value;
-            }
-        }
+        public event WVEventHandler<int, int>? PositionChanged;
 
-        private event WVEventHandler<int, int>? positionChangedEvent;
-        public event WVEventHandler<int, int>? PositionChanged
-        {
-            add
-            {
-                Plugin.ThrowDispose(this.WV);
-                positionChangedEvent += value;
-            }
-            remove
-            {
-                Plugin.ThrowDispose(this.WV);
-                positionChangedEvent -= value;
-            }
-        }
+        public event WVEventHandler<bool>? Activated;
 
-        private event WVEventHandler<bool>? activatedEvent;
-        public event WVEventHandler<bool>? Activated
-        {
-            add
-            {
-                Plugin.ThrowDispose(this.WV);
-                activatedEvent += value;
-            }
-            remove
-            {
-                Plugin.ThrowDispose(this.WV);
-                activatedEvent -= value;
-            }
-        }
+        public event WVEventHandler<bool>? EnabledEvent;
 
-        private event WVEventHandler<bool>? enabledEvent;
-        public event WVEventHandler<bool>? EnabledEvent
-        {
-            add
-            {
-                Plugin.ThrowDispose(this.WV);
-                enabledEvent += value;
-            }
-            remove
-            {
-                Plugin.ThrowDispose(this.WV);
-                enabledEvent -= value;
-            }
-        }
+        public event WVEventHandler<bool>? Visible;
 
-        private event WVEventHandler<bool>? visibleEvent;
-        public event WVEventHandler<bool>? Visible
-        {
-            add
-            {
-                Plugin.ThrowDispose(this.WV);
-                visibleEvent += value;
-            }
-            remove
-            {
-                Plugin.ThrowDispose(this.WV);
-                visibleEvent -= value;
-            }
-        }
+        public event WVEventHandler<int, int>? SizeChanged;
 
-        private event WVEventHandler<int, int>? sizeChangedEvent;
-        public event WVEventHandler<int, int>? SizeChanged
-        {
-            add
-            {
-                Plugin.ThrowDispose(this.WV);
-                sizeChangedEvent += value;
-            }
-            remove
-            {
-                Plugin.ThrowDispose(this.WV);
-                sizeChangedEvent -= value;
-            }
-        }
-
-        public event WVSysEventHandler? raw;
-        public event WVSysEventHandler? Raw
-        {
-            add 
-            {
-                Plugin.ThrowDispose(this.WV);
-                raw += value;
-            }
-            remove 
-            {
-                Plugin.ThrowDispose(this.WV);
-                raw -= value;
-            }
-
-        }
-
-        public Window(WebView wv) : base(wv)
-        {
-            this.WV = wv;
-            this.InternalRect = new Rect(wv);
-        }
-
-        public IRect Rect
-        {
-            get
-            {
-                Plugin.ThrowDispose(this.WV);
-                return this.InternalRect;
-            }
-        }
+        public event WVSysEventHandler? Raw;
 
         #endregion
 
-        //-------------------------------------------//
+        //=======================================//
 
-        #region FLAGS
+        #region Fields
+
+        // State
+        private WindowState _State { get; set; } = WindowState.None;
+        internal WindowState LastState { get; set; } = WindowState.None;
+        private bool StateChangeInternal { get; set; } = false;
+
+
+        private string _Title = string.Empty;
+        private bool _TopMost = false;
+        private bool _Enabled = true;
+        private bool _IsVisible = false;
+        private bool _PreventClose;
+        private bool _ClickThrough;
+
+        #endregion
+
+        public Window(IContext ctx) : base(ctx)
+        {
+            this.InternalRect = new Rect(this.WV);
+        }
+
+        //=======================================//
+
+        #region Properties
+
+        #region Flags
 
         /// <summary>
         /// Para indicar que no se quiere prevenir lanzar evento State
@@ -201,19 +107,20 @@ namespace WV.Win.Imp
 
         //-------------------------------------------//
 
-        #region PROPS
-
-        #region State
-
-        private WindowState _State { get; set; } = WindowState.None;
-        internal WindowState LastState { get; set; } = WindowState.None;
-        private bool StateChangeInternal { get; set; } = false;
+        public IRect Rect
+        {
+            get
+            {
+                ThrowIfDisposed();
+                return this.InternalRect;
+            }
+        }
 
         public WindowState State
         {
             get
             {
-                Plugin.ThrowDispose(this.WV);
+                ThrowIfDisposed();
 
                 if (this._State == WindowState.None)
                     this._State = Helpers.GetCurrentState(this.Handle);
@@ -222,7 +129,7 @@ namespace WV.Win.Imp
             }
             set
             {
-                Plugin.ThrowDispose(this.WV);
+                ThrowIfDisposed();
 
                 if (!this.IsVisible)
                     return;
@@ -255,42 +162,16 @@ namespace WV.Win.Imp
             }
         }
 
-        internal void UpdateStateFromSystem(WindowState currentState)
-        {
-            // Es un cambio de State controlado, no hacer nada
-            if (this.StateChangeInternal)
-                return;
-
-            // La ventana es invisible, es un falso cambio de estado,
-            // provocado por redimensionar la ventana mediante HWnd o Rect
-            if (!this.IsVisible)
-                return;
-
-            //State currentState = this.State;
-
-            if (this.State == currentState)
-                return;
-
-            this._State = currentState;
-
-            FireStateChangedEvent(currentState, currentState.ToString());
-        }
-
-        #endregion
-
-        #region Title
-
-        private string _Title = string.Empty;
         public string Title
         {
             get
             {
-                Plugin.ThrowDispose(this.WV);
+                ThrowIfDisposed();
                 return _Title;
             }
             set
             {
-                Plugin.ThrowDispose(this.WV);
+                ThrowIfDisposed();
 
                 if (_Title == value)
                     return;
@@ -302,21 +183,16 @@ namespace WV.Win.Imp
             }
         }
 
-        #endregion
-
-        #region TopMost
-
-        private bool _TopMost = false;
         public bool TopMost
         {
             get
             {
-                Plugin.ThrowDispose(this.WV);
+                ThrowIfDisposed();
                 return _TopMost;
             }
             set
             {
-                Plugin.ThrowDispose(this.WV);
+                ThrowIfDisposed();
 
                 if (value == _TopMost)
                     return;
@@ -326,23 +202,16 @@ namespace WV.Win.Imp
             }
         }
 
-
-
-        #endregion
-
-        #region Enabled
-
-        private bool _Enabled = true;
         public bool Enabled
         {
             get
             {
-                Plugin.ThrowDispose(this.WV);
+                ThrowIfDisposed();
                 return _Enabled;
             }
             set
             {
-                Plugin.ThrowDispose(this.WV);
+                ThrowIfDisposed();
 
                 if (value == _Enabled)
                     return;
@@ -352,84 +221,63 @@ namespace WV.Win.Imp
             }
         }
 
-        #endregion
-
-        #region Visible
-
-        private bool _IsVisible = false;
         public bool IsVisible
         {
             get
             {
-                Plugin.ThrowDispose(this.WV);
-                //return User32.IsWindowVisible(this.Handle);
+                ThrowIfDisposed();
                 return _IsVisible;
             }
             private set => _IsVisible = value;
         }
 
-        #endregion
-
-        #region PreventClose
-
-        private bool _PreventClose;
         public bool PreventClose
         {
             get
             {
-                Plugin.ThrowDispose(this.WV);
+                ThrowIfDisposed();
                 return _PreventClose;
             }
             set
             {
-                Plugin.ThrowDispose(this.WV);
+                ThrowIfDisposed();
                 _PreventClose = value;
             }
         }
-
-        #endregion
-
-        #region IsActive
 
         public bool IsActive
         {
             get
             {
-                Plugin.ThrowDispose(this.WV);
+                ThrowIfDisposed();
                 return User32.GetForegroundWindow() == this.Handle;
             }
         }
-
-        #endregion
 
         public bool AllowSnap
         {
             get
             {
-                Plugin.ThrowDispose(this.WV);
+                ThrowIfDisposed();
                 return Utils32.HasWindowStyle(this.Handle, WinStyles.WS_MAXIMIZEBOX);
             }
             set
             {
-                Plugin.ThrowDispose(this.WV);
+                ThrowIfDisposed();
                 Utils32.SetWinStyle(this.Handle, WinStyles.WS_MAXIMIZEBOX, value);
             }
         }
-
-        #region ClickThrough
-
-        private bool _ClickThrough;
 
         public bool ClickThrough
         {
             get
             {
-                Plugin.ThrowDispose(this.WV);
+                ThrowIfDisposed();
                 return _ClickThrough;
             }
             set
             {
-                Plugin.ThrowDispose(this.WV);
+                ThrowIfDisposed();
 
                 if (value == this.ClickThrough)
                     return;
@@ -448,15 +296,13 @@ namespace WV.Win.Imp
 
         #endregion
 
-        #endregion
+        //=======================================//
 
-        //-------------------------------------------//
-
-        #region METHODS
+        #region Methods
 
         public void ToCenter()
         {
-            Plugin.ThrowDispose(this.WV);
+            ThrowIfDisposed();
 
             if (this.State != WindowState.Normalized && this.State != WindowState.None)
                 return;
@@ -472,13 +318,13 @@ namespace WV.Win.Imp
 
         public void Close()
         {
-            Plugin.ThrowDispose(this.WV);
+            ThrowIfDisposed();
             User32.SendMessage(this.Handle, (uint)WinMsg.WM_CLOSE, 0, 0);
         }
 
         public void ShowBehind()
         {
-            Plugin.ThrowDispose(this.WV);
+            ThrowIfDisposed();
 
             if (this.IsVisible)
                 return;
@@ -492,7 +338,7 @@ namespace WV.Win.Imp
 
         public void Show()
         {
-            Plugin.ThrowDispose(this.WV);
+            ThrowIfDisposed();
 
             if (this.IsVisible)
                 return;
@@ -506,7 +352,7 @@ namespace WV.Win.Imp
 
         public void Hide()
         {
-            Plugin.ThrowDispose(this.WV);
+            ThrowIfDisposed();
 
             if (!this.IsVisible)
                 return;
@@ -516,7 +362,7 @@ namespace WV.Win.Imp
 
         public void Drag()
         {
-            Plugin.ThrowDispose(this.WV);
+            ThrowIfDisposed();
             this.WV.WVUIContext?.Post(x =>
             {
                 User32.ReleaseCapture();
@@ -528,7 +374,7 @@ namespace WV.Win.Imp
 
         public void ResizeTopLeft()
         {
-            Plugin.ThrowDispose(this.WV);
+            ThrowIfDisposed();
             this.WV.WVUIContext?.Post(x =>
             {
                 User32.ReleaseCapture();
@@ -538,7 +384,7 @@ namespace WV.Win.Imp
 
         public void ResizeTopRight()
         {
-            Plugin.ThrowDispose(WV);
+            Plugin.ThrowIfDisposed(WV);
             WV.WVUIContext?.Post(x =>
             {
                 User32.ReleaseCapture();
@@ -548,7 +394,7 @@ namespace WV.Win.Imp
 
         public void ResizeBottomLeft()
         {
-            Plugin.ThrowDispose(WV);
+            Plugin.ThrowIfDisposed(WV);
             WV.WVUIContext?.Post(x =>
             {
                 User32.ReleaseCapture();
@@ -558,7 +404,7 @@ namespace WV.Win.Imp
 
         public void ResizeBottomRight()
         {
-            Plugin.ThrowDispose(this.WV);
+            ThrowIfDisposed();
             this.WV.WVUIContext?.Post(x =>
             {
                 User32.ReleaseCapture();
@@ -568,7 +414,7 @@ namespace WV.Win.Imp
 
         public void ResizeLeft()
         {
-            Plugin.ThrowDispose(this.WV);
+            ThrowIfDisposed();
             this.WV.WVUIContext?.Post(x =>
             {
                 User32.ReleaseCapture();
@@ -578,7 +424,7 @@ namespace WV.Win.Imp
 
         public void ResizeRight()
         {
-            Plugin.ThrowDispose(this.WV);
+            ThrowIfDisposed();
             this.WV.WVUIContext?.Post(x =>
             {
                 User32.ReleaseCapture();
@@ -588,7 +434,7 @@ namespace WV.Win.Imp
 
         public void ResizeTop()
         {
-            Plugin.ThrowDispose(this.WV);
+            ThrowIfDisposed();
             this.WV.WVUIContext?.Post(x =>
             {
                 User32.ReleaseCapture();
@@ -598,7 +444,7 @@ namespace WV.Win.Imp
 
         public void ResizeBottom()
         {
-            Plugin.ThrowDispose(this.WV);
+            ThrowIfDisposed();
             this.WV.WVUIContext?.Post(x =>
             {
                 User32.ReleaseCapture();
@@ -629,7 +475,7 @@ namespace WV.Win.Imp
 
         public void Restore()
         {
-            Plugin.ThrowDispose(this.WV);
+            ThrowIfDisposed();
 
             switch (this.State)
             {
@@ -652,290 +498,148 @@ namespace WV.Win.Imp
 
         #endregion
 
-        //-------------------------------------------//
+        //=======================================//
 
-        #region EVENTS
+        #region Protected Methods
 
-        #region OnStateChanged
-
-        private IJSFunction? OnStateChangedFN { get; set; }
-
-        public object? OnStateChanged
+        protected override void ThrowIfDisposed()
         {
-            get
-            {
-                Plugin.ThrowDispose(this.WV);
-                return OnStateChangedFN?.Raw;
-            }
-            set
-            {
-                Plugin.ThrowDispose(this.WV);
-
-                if (value == OnStateChangedFN?.Raw)
-                    return;
-
-                this.OnStateChangedFN?.Dispose();
-                this.OnStateChangedFN = null;
-
-                if (value == null)
-                    return;
-
-                this.OnStateChangedFN = IJSFunction.Create(value);
-            }
-        }
-
-        internal void FireStateChangedEvent(WindowState value, string text)
-        {
-            if (this.PreventStateEvent)
-                return;
-
-            this.OnStateChangedFN?.Execute(value, text);
-            this.stateChangedEvent?.Invoke(this.WV, value, text);
+            base.ThrowIfDisposed();
+            Plugin.ThrowIfDisposed(this.WV);
         }
 
         #endregion
 
-        #region OnClose
+        //=======================================//
 
-        private IJSFunction? OnCloseFN { get; set; }
+        #region Internal Methods
 
-        public object? OnClosing
+        internal void FireStateChangedEvent(WindowState value, string text)
         {
-            get
-            {
-                Plugin.ThrowDispose(this.WV);
-                return OnCloseFN?.Raw; ;
-            }
-            set
-            {
-                Plugin.ThrowDispose(this.WV);
+            if (this.Disposed)
+                return;
 
-                if (value == OnCloseFN?.Raw)
-                    return;
+            if (this.PreventStateEvent)
+                return;
 
-                this.OnCloseFN?.Dispose();
-                this.OnCloseFN = null;
-
-                if (value == null)
-                    return;
-
-                this.OnCloseFN = IJSFunction.Create(value);
-            }
+            this.StateChanged?.Invoke(this.WV, value, text);
         }
 
         internal void FireCloseEvent()
         {
-            this.OnCloseFN?.Execute();
-            this.closeEvent?.Invoke(this.WV);
-        }
+            if(this.Disposed)
+                return;
 
-        #endregion
-
-        #region OnPositionChanged
-
-        private IJSFunction? OnPositionChangedFN { get; set; }
-
-        public object? OnPositionChanged
-        {
-            get
-            {
-                Plugin.ThrowDispose(this.WV);
-                return this.OnPositionChangedFN?.Raw;
-            }
-            set
-            {
-                Plugin.ThrowDispose(this.WV);
-
-                if (value == OnPositionChangedFN?.Raw)
-                    return;
-
-                this.OnPositionChangedFN?.Dispose();
-                this.OnPositionChangedFN = null;
-
-                if (value == null)
-                    return;
-
-                this.OnPositionChangedFN = IJSFunction.Create(value);
-            }
+            this.Closing?.Invoke(this.WV);
         }
 
         internal void FirePositionChangedEvent(int x, int y)
         {
+            if (this.Disposed)
+                return;
+
             if (this.PreventPositionEvent)
                 return;
 
-            this.OnPositionChangedFN?.Execute(x, y);
-            this.positionChangedEvent?.Invoke(this.WV, x, y);
-        }
-
-        #endregion
-
-        #region OnActivated
-
-        private IJSFunction? OnActivatedFN { get; set; }
-
-        public object? OnActivated
-        {
-            get
-            {
-                Plugin.ThrowDispose(this.WV);
-                return this.OnActivatedFN?.Raw;
-            }
-            set
-            {
-                Plugin.ThrowDispose(this.WV);
-
-                if (value == OnActivatedFN?.Raw)
-                    return;
-
-                this.OnActivatedFN?.Dispose();
-                this.OnActivatedFN = null;
-
-                if (value == null)
-                    return;
-
-                this.OnActivatedFN = IJSFunction.Create(value);
-            }
+            this.PositionChanged?.Invoke(this.WV, x, y);
         }
 
         internal void FireActivatedEvent(bool active)
         {
+            if (this.Disposed)
+                return;
+
             if (this.PreventActivateEvent)
                 return;
 
-            this.OnActivatedFN?.Execute(active);
-            this.activatedEvent?.Invoke(this.WV, active);
-        }
-
-        #endregion
-
-        #region OnEnabled
-
-        private IJSFunction? OnEnabledFN { get; set; }
-
-        public object? OnEnabled
-        {
-            get
-            {
-                Plugin.ThrowDispose(this.WV);
-                return OnEnabledFN?.Raw;
-            }
-            set
-            {
-                Plugin.ThrowDispose(this.WV);
-
-                if (value == OnEnabledFN?.Raw)
-                    return;
-
-                this.OnEnabledFN?.Dispose();
-                this.OnEnabledFN = null;
-
-                if (value == null)
-                    return;
-
-                this.OnEnabledFN = IJSFunction.Create(value);
-            }
+            this.Activated?.Invoke(this.WV, active);
         }
 
         internal void FireEnabledEvent(bool enabled)
         {
+            if (this.Disposed)
+                return;
+
             if (this.PreventEnableEvent)
                 return;
 
-            this.OnEnabledFN?.Execute(enabled);
-            this.enabledEvent?.Invoke(this.WV, enabled);
-        }
-
-        #endregion
-
-        #region OnVisible
-
-        private IJSFunction? OnVisibleFN { get; set; }
-
-        public object? OnVisible
-        {
-            get
-            {
-                Plugin.ThrowDispose(this.WV);
-                return OnVisibleFN?.Raw;
-            }
-            set
-            {
-                Plugin.ThrowDispose(this.WV);
-
-                if (value == OnVisibleFN?.Raw)
-                    return;
-
-                this.OnVisibleFN?.Dispose();
-                this.OnVisibleFN = null;
-
-                if (value == null)
-                    return;
-
-                this.OnVisibleFN = IJSFunction.Create(value);
-            }
+            this.EnabledEvent?.Invoke(this.WV, enabled);
         }
 
         internal void FireVisibleEvent(bool visible)
         {
-            this.IsVisible = visible;
+            if (this.Disposed)
+                return;
 
-            //if(this.WV.WVController != null)
-            //    this.WV.WVController.IsVisible = visible;
+            this.IsVisible = visible;
 
             if (this.PreventVisibleEvent)
                 return;
 
-            this.OnVisibleFN?.Execute(visible);
-            this.visibleEvent?.Invoke(this.WV, visible);
-        }
-
-        #endregion
-
-        #region OnSizeChanged
-
-        private IJSFunction? OnSizeChangedFN { get; set; }
-
-        public object? OnSizeChanged
-        {
-            get
-            {
-                Plugin.ThrowDispose(this.WV);
-                return OnSizeChangedFN?.Raw;
-            }
-            set
-            {
-                Plugin.ThrowDispose(this.WV);
-
-                if (value == OnSizeChangedFN?.Raw)
-                    return;
-
-                this.OnSizeChangedFN?.Dispose();
-                this.OnSizeChangedFN = null;
-
-                if (value == null)
-                    return;
-
-                this.OnSizeChangedFN = IJSFunction.Create(value);
-            }
+            this.Visible?.Invoke(this.WV, visible);
         }
 
         internal void FireSizeChangedEvent(int width, int heigth)
         {
+            if (this.Disposed)
+                return;
+
             if (this.PreventSizeEvent)
                 return;
 
-            this.OnSizeChangedFN?.Execute(width, heigth);
-            this.sizeChangedEvent?.Invoke(this.WV, width, heigth);
+            this.SizeChanged?.Invoke(this.WV, width, heigth);
+        }
+
+        internal void ClearAllEvents()
+        {
+            // Quita los eventos registrados con AddEventListener desde JS
+            this.ClearListeners();
+            this.ClearEvents();
+        }
+
+        internal void ToDefault()
+        {
+            if (!this.IsVisible)
+            {
+                this.PreventVisibleEvent = true;
+                this.ShowBehind();
+                this.PreventVisibleEvent = false;
+            }
+
+            this.PreventStateEvent = true;
+            this.Normalize();
+            this.PreventStateEvent = false;
+
+            this.PreventVisibleEvent = true;
+            this.Hide();
+            this.PreventVisibleEvent = false;
+
+            this.Title = string.Empty;
+            this.TopMost = false;
+            this.Enabled = true;
+            this.PreventClose = false;
+            this.ClickThrough = false;
+
+            Rect rect = this.InternalRect;
+            rect.X = 0;
+            rect.Y = 0;
+            rect.MinWidth = AppManager.MinWindowWidth;
+            rect.MinHeight = AppManager.MinWindowHeight;
+            rect.Width = rect.MinWidth;
+            rect.Height = rect.MinHeight;
+            rect.MaxWidth = AppManager.MaxWindowWidth;
+            rect.MaxHeight = AppManager.MaxWindowHeight;
         }
 
         #endregion
 
-        #endregion
+        //=======================================//
+
+        #region Private Methods
 
         private void ChangeState(WindowState value)
         {
-            Plugin.ThrowDispose(this.WV);
+            ThrowIfDisposed();
 
             // La ventana DEBE estar visible
             if (!this.IsVisible)
@@ -979,79 +683,16 @@ namespace WV.Win.Imp
             }
         }
 
+        #endregion
 
-        internal void ClearEvents()
-        {
-            // Quita los eventos registrados con AddEventListener desde JS
-            this.CleanJSEvents();
-
-            this.stateChangedEvent = null;
-            this.closeEvent = null;
-            this.positionChangedEvent = null;
-            this.activatedEvent = null;
-            this.enabledEvent = null;
-            this.visibleEvent = null;
-            this.sizeChangedEvent = null;
-
-            this.OnStateChangedFN = null;
-            this.OnCloseFN = null;
-            this.OnPositionChangedFN = null;
-            this.OnActivatedFN = null;
-            this.OnEnabledFN = null;
-            this.OnVisibleFN = null;
-            this.OnSizeChangedFN = null;
-        }
-
-        protected override void Dispose(bool disposing)
-        {
-            //throw new NotImplementedException();
-        }
-
-        public override void Dispose()
-        {
-            //throw new Exception("You can't do dispose");
-        }
-
-        internal void ToDefault()
-        {
-            if (!this.IsVisible)
-            {
-                this.PreventVisibleEvent = true;
-                this.ShowBehind();
-                this.PreventVisibleEvent = false;
-            }
-
-            this.PreventStateEvent = true;
-            this.Normalize();
-            this.PreventStateEvent = false;
-
-            this.PreventVisibleEvent = true;
-            this.Hide();
-            this.PreventVisibleEvent = false;
-
-            this.Title = string.Empty;
-            this.TopMost = false;
-            this.Enabled = true;
-            this.PreventClose = false;
-            this.ClickThrough = false;
-
-            Rect rect = this.InternalRect;
-            rect.X = 0;
-            rect.Y = 0;
-            rect.MinWidth = AppManager.MinWindowWidth;
-            rect.MinHeight = AppManager.MinWindowHeight;
-            rect.Width = rect.MinWidth;
-            rect.Height = rect.MinHeight;
-            rect.MaxWidth = AppManager.MaxWindowWidth;
-            rect.MaxHeight = AppManager.MaxWindowHeight;
-        }
+        //=======================================//
 
         #region WNDPROC
 
         internal IntPtr WndProc(IntPtr hWnd, uint uMsg, IntPtr wParam, IntPtr lParam)
         {
             bool handled = false;
-            this.raw?.Invoke(this.WV, new object[] { hWnd, uMsg, wParam, lParam }, ref handled);
+            this.Raw?.Invoke(this.WV, new object[] { hWnd, uMsg, wParam, lParam }, ref handled);
 
             if(handled)
                 return IntPtr.Zero;
@@ -1220,6 +861,27 @@ namespace WV.Win.Imp
             this.FirePositionChangedEvent(posX, posY);
 
             return User32.DefWindowProcW(hWnd, uMsg, wParam, lParam);
+        }
+
+        internal void UpdateStateFromSystem(WindowState currentState)
+        {
+            // Es un cambio de State controlado, no hacer nada
+            if (this.StateChangeInternal)
+                return;
+
+            // La ventana es invisible, es un falso cambio de estado,
+            // provocado por redimensionar la ventana mediante HWnd o Rect
+            if (!this.IsVisible)
+                return;
+
+            //State currentState = this.State;
+
+            if (this.State == currentState)
+                return;
+
+            this._State = currentState;
+
+            FireStateChangedEvent(currentState, currentState.ToString());
         }
 
         #endregion

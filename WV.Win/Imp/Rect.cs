@@ -80,12 +80,12 @@ namespace WV.Win.Imp
         {
             get 
             {
-                Plugin.ThrowDispose(this.WV);
+                Plugin.ThrowIfDisposed(this.WV);
                 return GetRECT(WV).X;
             } 
             set
             {
-                Plugin.ThrowDispose(this.WV);
+                Plugin.ThrowIfDisposed(this.WV);
 
                 if(this.Win.State == WindowState.Minimized)
                     return;
@@ -105,12 +105,12 @@ namespace WV.Win.Imp
         {
             get 
             {
-                Plugin.ThrowDispose(this.WV);
+                Plugin.ThrowIfDisposed(this.WV);
                 return GetRECT(WV).Y;
             } 
             set
             {
-                Plugin.ThrowDispose(this.WV);
+                Plugin.ThrowIfDisposed(this.WV);
 
                 if (this.Win.State == WindowState.Minimized)
                     return;
@@ -136,12 +136,12 @@ namespace WV.Win.Imp
         {
             get
             {
-                Plugin.ThrowDispose(this.WV);
+                Plugin.ThrowIfDisposed(this.WV);
                 return GetRECT(WV).Width;
             }
             set
             {
-                Plugin.ThrowDispose(this.WV);
+                Plugin.ThrowIfDisposed(this.WV);
 
                 if (this.Win.State == WindowState.Minimized)
                     return;
@@ -166,13 +166,13 @@ namespace WV.Win.Imp
         {
             get
             {
-                Plugin.ThrowDispose(this.WV);              
+                Plugin.ThrowIfDisposed(this.WV);              
                 // La ventana que contiene el WebView es 1 pixel mas bajo cuando está maximizado
                 return GetRECT(WV).Height;
             }
             set
             {
-                Plugin.ThrowDispose(this.WV);
+                Plugin.ThrowIfDisposed(this.WV);
 
                 if (this.Win.State == WindowState.Minimized)
                     return;
@@ -206,12 +206,12 @@ namespace WV.Win.Imp
         {
             get 
             { 
-                Plugin.ThrowDispose(this.WV); 
+                Plugin.ThrowIfDisposed(this.WV); 
                 return _MaxWidth; 
             }
             set
             {
-                Plugin.ThrowDispose(this.WV);
+                Plugin.ThrowIfDisposed(this.WV);
 
                 if (this.Win.State == WindowState.Minimized)
                     return;
@@ -230,12 +230,12 @@ namespace WV.Win.Imp
         {
             get 
             { 
-                Plugin.ThrowDispose(this.WV); 
+                Plugin.ThrowIfDisposed(this.WV); 
                 return _MaxHeight; 
             }
             set
             {
-                Plugin.ThrowDispose(this.WV);
+                Plugin.ThrowIfDisposed(this.WV);
 
                 if (this.Win.State == WindowState.Minimized)
                     return;
@@ -265,12 +265,12 @@ namespace WV.Win.Imp
         {
             get 
             { 
-                Plugin.ThrowDispose(this.WV); 
+                Plugin.ThrowIfDisposed(this.WV); 
                 return _MinWidth; 
             }
             set
             {
-                Plugin.ThrowDispose(this.WV);
+                Plugin.ThrowIfDisposed(this.WV);
 
                 if (this.Win.State == WindowState.Minimized)
                     return;
@@ -292,12 +292,12 @@ namespace WV.Win.Imp
         {
             get 
             { 
-                Plugin.ThrowDispose(this.WV); 
+                Plugin.ThrowIfDisposed(this.WV); 
                 return _MinHeight; 
             }
             set
             {
-                Plugin.ThrowDispose(this.WV);
+                Plugin.ThrowIfDisposed(this.WV);
 
                 if (this.Win.State == WindowState.Minimized)
                     return;
@@ -323,7 +323,7 @@ namespace WV.Win.Imp
 
         public void SetSize(int width, int height)
         {
-            Plugin.ThrowDispose(this.WV);
+            Plugin.ThrowIfDisposed(this.WV);
 
             if (this.Win.State == WindowState.Minimized)
                     return;
@@ -350,14 +350,14 @@ namespace WV.Win.Imp
 
         public int[] GetSize()
         {
-            Plugin.ThrowDispose(this.WV);
+            Plugin.ThrowIfDisposed(this.WV);
             RECT rect = GetRECT(this.WV);
             return [rect.Width, rect.Height];
         }
 
         public void SetPosition(int x, int y)
         {
-            Plugin.ThrowDispose(this.WV);
+            Plugin.ThrowIfDisposed(this.WV);
 
             if (this.Win.State == WindowState.Minimized)
                 return;
@@ -374,14 +374,14 @@ namespace WV.Win.Imp
 
         public int[] GetPosition()
         {
-            Plugin.ThrowDispose(this.WV);
+            Plugin.ThrowIfDisposed(this.WV);
             RECT rect = GetRECT(this.WV);
             return [rect.X, rect.Y];
         }
 
         public void SetPositionAndSize(int x, int y, int width, int height)
         {
-            Plugin.ThrowDispose(this.WV);
+            Plugin.ThrowIfDisposed(this.WV);
 
             if (width > this.MaxWidth)
                 width = this.MaxWidth;
@@ -402,7 +402,7 @@ namespace WV.Win.Imp
 
         public int[] GetPositionAndSize()
         {
-            Plugin.ThrowDispose(this.WV);
+            Plugin.ThrowIfDisposed(this.WV);
             RECT rect = GetRECT(this.WV);
             return [rect.X, rect.Y, rect.Width, rect.Height];
         }

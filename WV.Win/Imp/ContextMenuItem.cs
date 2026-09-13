@@ -44,12 +44,12 @@ namespace WV.Win.Imp
         {
             get
             {
-                Plugin.ThrowDispose(this.WV);
+                Plugin.ThrowIfDisposed(this.WV);
                 return this.Label; 
             }
             set
             {
-                Plugin.ThrowDispose(this.WV);
+                Plugin.ThrowIfDisposed(this.WV);
                 if (value == label) return;
                 label = GetLabel(value);
                 CreateItem();
@@ -60,12 +60,12 @@ namespace WV.Win.Imp
         { 
             get
             {
-                Plugin.ThrowDispose(this.WV);
+                Plugin.ThrowIfDisposed(this.WV);
                 return kind.ToString();
             }
             set
             {
-                Plugin.ThrowDispose(this.WV);
+                Plugin.ThrowIfDisposed(this.WV);
                 if (value == Kind) return;
                 kind = GetKind(value);
                 CreateItem();
@@ -76,12 +76,12 @@ namespace WV.Win.Imp
         {
             get
             {
-                Plugin.ThrowDispose(this.WV);
+                Plugin.ThrowIfDisposed(this.WV);
                 return icon;
             }
             set
             {
-                Plugin.ThrowDispose(this.WV);
+                Plugin.ThrowIfDisposed(this.WV);
                 if (value == icon) return;
                 icon = value;
                 stream = GetStream(icon);
@@ -389,7 +389,7 @@ namespace WV.Win.Imp
 
         private void ThrowDispose()
         {
-            Plugin.ThrowDispose(this.WV);
+            Plugin.ThrowIfDisposed(this.WV);
         }
 
         #endregion

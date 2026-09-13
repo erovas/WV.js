@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-VisualStudioVersion = 17.5.33424.131
+# Visual Studio Version 18
+VisualStudioVersion = 18.10.12201.205
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "1. SDK", "1. SDK", "{4CB108A7-7E1B-4B1E-BC2B-E36C2AA9A140}"
 EndProject
@@ -10,6 +10,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WV", "WV\WV.csproj", "{96D67421-7E11-5B31-1AE9-B0C029F103AF}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WV.Win", "WV.Win\WV.Win.csproj", "{1FEB5B91-A43E-A241-983B-6804698C6056}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WV.Logger", "WV.Logger\WV.Logger.csproj", "{47FE1809-5CBF-46C2-B666-35026CE0F927}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -25,6 +27,10 @@ Global
 		{1FEB5B91-A43E-A241-983B-6804698C6056}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1FEB5B91-A43E-A241-983B-6804698C6056}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1FEB5B91-A43E-A241-983B-6804698C6056}.Release|Any CPU.Build.0 = Release|Any CPU
+		{47FE1809-5CBF-46C2-B666-35026CE0F927}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{47FE1809-5CBF-46C2-B666-35026CE0F927}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{47FE1809-5CBF-46C2-B666-35026CE0F927}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{47FE1809-5CBF-46C2-B666-35026CE0F927}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -32,6 +38,7 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{96D67421-7E11-5B31-1AE9-B0C029F103AF} = {4CB108A7-7E1B-4B1E-BC2B-E36C2AA9A140}
 		{1FEB5B91-A43E-A241-983B-6804698C6056} = {0B1A160F-B632-44C3-8268-29BC99BAD8D4}
+		{47FE1809-5CBF-46C2-B666-35026CE0F927} = {0B1A160F-B632-44C3-8268-29BC99BAD8D4}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {17D3F3CD-70E0-47FF-8377-76EA67C8F985}

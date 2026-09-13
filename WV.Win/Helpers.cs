@@ -7,6 +7,7 @@ using WV.Win.Win32.Structs;
 using System.Globalization;
 using Microsoft.Web.WebView2.Core;
 using System.Runtime.InteropServices;
+using WV.Interfaces;
 
 namespace WV.Win
 {
@@ -369,6 +370,22 @@ namespace WV.Win
             User32.SetLayeredWindowAttributes(MainhWnd, Helpers.TransparencyColor, 0, DWFlags.LWA_COLORKEY);
 
             return MainhWnd;
+        }
+
+        public static string GetUID()
+        {
+            return Guid.NewGuid().ToString();
+        }
+
+        public static IContext CreateContext(IWebView? wv, ILogger log, string name, string? source = null, Action<string>? onDisposed = null)
+        {
+            ILogger logger = log;
+
+            if(wv != null)
+                logger = string.IsNullOrEmpty(source) ? log.ForSource(name) : log.ForSource($"{source}:{name}");
+
+            string uid = Helpers.GetUID();
+            return new Context(wv, logger, uid, name, onDisposed);
         }
 
     }

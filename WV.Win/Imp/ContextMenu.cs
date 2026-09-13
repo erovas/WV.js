@@ -407,7 +407,7 @@ namespace WV.Win.Imp
 
         private void ThrowDispose()
         {
-            Plugin.ThrowDispose(this.WV);
+            Plugin.ThrowIfDisposed(this.WV);
         }
 
         #endregion
