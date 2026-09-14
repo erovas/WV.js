@@ -384,7 +384,7 @@ namespace WV.Win.Imp
 
         public void ResizeTopRight()
         {
-            Plugin.ThrowIfDisposed(WV);
+            ThrowIfDisposed();
             WV.WVUIContext?.Post(x =>
             {
                 User32.ReleaseCapture();
@@ -394,7 +394,7 @@ namespace WV.Win.Imp
 
         public void ResizeBottomLeft()
         {
-            Plugin.ThrowIfDisposed(WV);
+            ThrowIfDisposed();
             WV.WVUIContext?.Post(x =>
             {
                 User32.ReleaseCapture();

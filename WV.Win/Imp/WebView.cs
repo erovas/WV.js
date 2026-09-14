@@ -56,7 +56,7 @@ namespace WV.Win.Imp
         {
             get
             {
-                Plugin.ThrowIfDisposed(this);
+                ThrowIfDisposed();
                 return this.InternalWindow;
             }
         }
@@ -65,7 +65,7 @@ namespace WV.Win.Imp
         {
             get
             {
-                Plugin.ThrowIfDisposed(this);
+                ThrowIfDisposed();
                 return this.InternalBrowser;
             }
         }
@@ -74,7 +74,7 @@ namespace WV.Win.Imp
         {
             get
             {
-                Plugin.ThrowIfDisposed(this);
+                ThrowIfDisposed();
                 return this.InternalPrintManager;
             }
         }
@@ -85,7 +85,7 @@ namespace WV.Win.Imp
         {
             get
             {
-                Plugin.ThrowIfDisposed(this);
+                ThrowIfDisposed();
                 var list = this.ImportedPlugins.Keys.ToList();
                 list.Insert(0, this.Name);
                 return list.ToArray();
@@ -450,7 +450,7 @@ namespace WV.Win.Imp
 
         public object NewPluginInstance(string pluginName, params object[] args)
         {
-            Plugin.ThrowIfDisposed(this);
+            ThrowIfDisposed();
 
             PluginLoader? ctxPlugin = null;
 
@@ -484,13 +484,13 @@ namespace WV.Win.Imp
 
         public object GetPluginInstance(string UID)
         {
-            Plugin.ThrowIfDisposed(this);
+            ThrowIfDisposed();
             return this.PluginInstances[UID];
         }
 
         public string[] LoadPluginsFromFolder(string foldePath = "")
         {
-            Plugin.ThrowIfDisposed(this);
+            ThrowIfDisposed();
 
             if(string.IsNullOrWhiteSpace(foldePath))
                 foldePath = AppManager.PluginsPath;
@@ -509,7 +509,7 @@ namespace WV.Win.Imp
 
         public string LoadPlugin(string pluginPath)
         {
-            Plugin.ThrowIfDisposed(this);
+            ThrowIfDisposed();
             
             try
             {
@@ -533,7 +533,7 @@ namespace WV.Win.Imp
 
         public void UnloadPlugin(string pluginName)
         {
-            Plugin.ThrowIfDisposed(this);
+            ThrowIfDisposed();
 
             if (!this.ImportedPlugins.ContainsKey(pluginName))
                 throw new Exception($"[{pluginName}] Plugin not found.");

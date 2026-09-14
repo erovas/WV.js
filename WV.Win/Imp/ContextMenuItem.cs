@@ -44,12 +44,12 @@ namespace WV.Win.Imp
         {
             get
             {
-                Plugin.ThrowIfDisposed(this.WV);
+                ThrowIfDisposed();
                 return this.Label; 
             }
             set
             {
-                Plugin.ThrowIfDisposed(this.WV);
+                ThrowIfDisposed();
                 if (value == label) return;
                 label = GetLabel(value);
                 CreateItem();
@@ -60,12 +60,12 @@ namespace WV.Win.Imp
         { 
             get
             {
-                Plugin.ThrowIfDisposed(this.WV);
+                ThrowIfDisposed();
                 return kind.ToString();
             }
             set
             {
-                Plugin.ThrowIfDisposed(this.WV);
+                ThrowIfDisposed();
                 if (value == Kind) return;
                 kind = GetKind(value);
                 CreateItem();
@@ -76,12 +76,12 @@ namespace WV.Win.Imp
         {
             get
             {
-                Plugin.ThrowIfDisposed(this.WV);
+                ThrowIfDisposed();
                 return icon;
             }
             set
             {
-                Plugin.ThrowIfDisposed(this.WV);
+                ThrowIfDisposed();
                 if (value == icon) return;
                 icon = value;
                 stream = GetStream(icon);
@@ -93,12 +93,12 @@ namespace WV.Win.Imp
         { 
             get
             {
-                ThrowDispose();
+                ThrowIfDisposed();
                 return parent;
             }
             internal set
             {
-                ThrowDispose(); 
+                ThrowIfDisposed(); 
                 parent = value;
             } 
         }
@@ -107,7 +107,7 @@ namespace WV.Win.Imp
         {
             get
             {
-                ThrowDispose();
+                ThrowIfDisposed();
                 return this.children.ToArray();
             }
         }
@@ -116,12 +116,12 @@ namespace WV.Win.Imp
         {
             get
             {
-                ThrowDispose();
+                ThrowIfDisposed();
                 return this.Item.IsChecked;
             }
             set
             {
-                ThrowDispose();
+                ThrowIfDisposed();
                 this.Item.IsChecked = value;
             }
         }
@@ -130,12 +130,12 @@ namespace WV.Win.Imp
         {
             get
             {
-                ThrowDispose();
+                ThrowIfDisposed();
                 return this.Item.IsEnabled;
             }
             set
             {
-                ThrowDispose();
+                ThrowIfDisposed();
                 this.Item.IsEnabled = value;
             }
         }
@@ -144,12 +144,12 @@ namespace WV.Win.Imp
         {
             get
             {
-                ThrowDispose();
+                ThrowIfDisposed();
                 return visible;
             }
             set
             {
-                ThrowDispose();
+                ThrowIfDisposed();
                 visible = value;
             }
         }
@@ -158,12 +158,12 @@ namespace WV.Win.Imp
         {
             get
             {
-                ThrowDispose();
+                ThrowIfDisposed();
                 return callback!.Raw;
             }
             set
             {
-                ThrowDispose();
+                ThrowIfDisposed();
 
                 if (value == this.callback?.Raw)
                     return;
@@ -184,7 +184,7 @@ namespace WV.Win.Imp
 
         public void AddItem(IContextMenuItem item)
         {
-            ThrowDispose();
+            ThrowIfDisposed();
             this.CheckKind(this.Item);
             this.AllowInsertItem(item);
 
@@ -199,7 +199,7 @@ namespace WV.Win.Imp
 
         public void InsertItem(int index, IContextMenuItem item)
         {
-            ThrowDispose();
+            ThrowIfDisposed();
             this.CheckKind(this.Item);
             this.AllowInsertItem(item);
 
@@ -213,7 +213,7 @@ namespace WV.Win.Imp
 
         public void RemoveItem(IContextMenuItem item)
         {
-            ThrowDispose();
+            ThrowIfDisposed();
             this.CheckKind(this.Item);
 
             ContextMenuItem rawItem = GetRamItem(item);
@@ -226,7 +226,7 @@ namespace WV.Win.Imp
 
         public void RemoveItemAt(int index)
         {
-            ThrowDispose();
+            ThrowIfDisposed();
             this.CheckKind(this.Item);
 
             ContextMenuItem rawItem = GetRamItem(this.children[index]);
@@ -239,7 +239,7 @@ namespace WV.Win.Imp
 
         public void Clear()
         {
-            ThrowDispose();
+            ThrowIfDisposed();
 
             this.Item.Children.Clear();
 
@@ -387,7 +387,7 @@ namespace WV.Win.Imp
             return rawItem;
         }
 
-        private void ThrowDispose()
+        private void ThrowIfDisposed()
         {
             Plugin.ThrowIfDisposed(this.WV);
         }
