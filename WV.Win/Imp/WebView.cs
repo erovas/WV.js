@@ -539,13 +539,14 @@ namespace WV.Win.Imp
                 throw new Exception($"[{pluginName}] Plugin not found.");
 
             var ctx = this.ImportedPlugins[pluginName];
-            
+
+            // Obtener todas las instancias del plugin <uid, object>
             var instances = this.PluginInstances.Where(i => ctx.Type == i.Value.GetType()).ToList();
 
             // Verificar si existe alguna instancia sin hacer Dispose()
-            foreach (Plugin item in this.PluginInstances.Values)
-                if(!item.Disposed)
-                    throw new Exception($"The [{pluginName}] plugin cannot be unloaded while instances remain undisposed. {Environment.NewLine} Instance UID = {item.UID}");
+            foreach (var instance in instances)
+                if(instance.Value is Plugin plugin && !plugin.Disposed)
+                    throw new Exception($"The [{pluginName}] plugin cannot be unloaded while instances remain undisposed. {Environment.NewLine} Instance UID = {plugin.UID}");
 
             foreach (var instance in instances)
                 this.PluginInstances.Remove(instance.Key);
@@ -555,14 +556,6 @@ namespace WV.Win.Imp
                 
             ctx.Unload();
             this.ImportedPlugins.Remove(pluginName);
-        }
-
-        private ILogger CreateScopeLogger(string source)
-        {
-            if(this.IsMain)
-                return ((Logger.Logger)this.Logger).ForSource(source);
-            else
-                return ((Logger.ScopedLogger)this.Logger).ForSource(source);
         }
 
         #endregion
