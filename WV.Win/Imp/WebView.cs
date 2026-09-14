@@ -156,9 +156,9 @@ namespace WV.Win.Imp
 
             var source = this.Logger.Source;
 
-            this.InternalWindow = new Window(Helpers.CreateContext(this, Logger, typeof(Window).Name, source));
-            this.InternalBrowser = new Browser(Helpers.CreateContext(this, Logger, typeof(Browser).Name, source), language);
-            this.InternalPrintManager = new PrintManager(Helpers.CreateContext(this, Logger, typeof(PrintManager).Name, source));
+            this.InternalWindow = new Window(Helpers.CreateContext(this, Logger, nameof(Window), source));
+            this.InternalBrowser = new Browser(Helpers.CreateContext(this, Logger, nameof(Browser), source), language);
+            this.InternalPrintManager = new PrintManager(Helpers.CreateContext(this, Logger, nameof(PrintManager), source));
         }
 
         [MemberNotNull(nameof(WVUIContext))]
@@ -488,23 +488,23 @@ namespace WV.Win.Imp
             return this.PluginInstances[UID];
         }
 
-        public string[] LoadPluginsFromFolder(string foldePath = "")
+        public string[] LoadPluginsFromFolder(string folderPath = "")
         {
             ThrowIfDisposed();
 
-            if(string.IsNullOrWhiteSpace(foldePath))
-                foldePath = AppManager.PluginsPath;
+            if(string.IsNullOrWhiteSpace(folderPath))
+                folderPath = AppManager.PluginsPath;
 
-            if (!Directory.Exists(foldePath))
-                throw new Exception($"The directory [{foldePath}] does not exist");
+            if (!Directory.Exists(folderPath))
+                throw new Exception($"The directory [{folderPath}] does not exist");
 
-            List<string> dllError = new List<string>();
+            List<string> dllErrors = new List<string>();
 
-            foreach (string assemblyFile in Directory.GetFiles(foldePath, "*.dll", SearchOption.AllDirectories))
+            foreach (string assemblyFile in Directory.GetFiles(folderPath, "*.dll", SearchOption.AllDirectories))
                 try { this.LoadPlugin(assemblyFile); }
-                catch (Exception ex) { dllError.Add(ex.Message); }
+                catch (Exception ex) { dllErrors.Add(ex.Message); }
             
-            return dllError.ToArray();
+            return dllErrors.ToArray();
         }
 
         public string LoadPlugin(string pluginPath)
