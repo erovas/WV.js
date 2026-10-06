@@ -8,43 +8,16 @@ using System.Globalization;
 using Microsoft.Web.WebView2.Core;
 using System.Runtime.InteropServices;
 using WV.Interfaces;
+using WV.Core.Pluging;
 
 namespace WV.Win
 {
-    internal static class Helpers
+    internal static class Utils
     {
-
-        #region WndProccess avoid GC
-
-        // Delegado para el procedimiento de ventana
-        public delegate nint WndProcDelegate(nint hWnd, uint msg, IntPtr wParam, IntPtr lParam);
-
-        /// <summary>
-        /// Mantener una referencia al delegado para evitar que el GC lo elimine
-        /// </summary>
-        public static WndProcDelegate WinProcDelegate { get; } = WndProc;
-
-
-        #endregion
-
-        #region WNDPROCs
-
-        public static nint WndProc(nint hWnd, uint msg, IntPtr wParam, nint lParam)
-        {
-            if (!WinInstances.ContainsKey(hWnd))
-                return User32.DefWindowProcW(hWnd, msg, wParam, lParam);
-
-            return WinInstances[hWnd].WndProc(hWnd, msg, wParam, lParam);
-        }
-
-        #endregion
 
         #region PROPS
 
-        /// <summary>
-        /// 
-        /// </summary>
-        public static uint TransparencyColor { get; } = 0x0000FF;
+        public static readonly string UserDataFolder = Path.Combine(App.Directory, "userdata");
 
         /// <summary>
         /// ["es-ES", CoreWebView2Environment]
@@ -79,9 +52,9 @@ namespace WV.Win
 
         #endregion
 
-        static Helpers() 
+        static Utils() 
         {
-            URL = "https://" + AppManager.Domain + "/";
+            URL = "https://" + App.Window.Title + "/";
             HostObjectName = "-_-" + Guid.NewGuid().ToString() + "-_-";
 
             MimeTypes = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase) {
@@ -179,46 +152,6 @@ namespace WV.Win
             return Environment.GetCommandLineArgs()[0];
         }
 
-        public static WindowState GetCurrentState(IntPtr hwnd)
-        {
-            var placement = new WINDOWPLACEMENT();
-            placement.length = Marshal.SizeOf(placement);
-            User32.GetWindowPlacement(hwnd, ref placement);
-
-            WindowState newState = WindowState.Normalized;
-
-            switch (placement.showCmd)
-            {
-                //case 1: // SW_SHOWNORMAL
-                //    newState = State.Normal;
-                //    break;
-                case 2: // SW_SHOWMINIMIZED
-                    newState = WindowState.Minimized;
-                    break;
-                case 3: // SW_SHOWMAXIMIZED
-                    newState = WindowState.Maximized;
-                    break;
-            }
-
-            return newState;
-        }
-    
-        public static void WebViewDefault(WebView wv)
-        {
-            wv.CleanMyself();
-
-            Window window = wv.InternalWindow;
-            Browser browser = wv.InternalBrowser;
-            PrintManager printManager = wv.InternalPrintManager;
-
-            if (!browser.ResetWebViewOnReload)
-                return;
-
-            // Volver todo a Default
-            window.ToDefault();
-            browser.ToDefault();
-            printManager.ToDefault();
-        }
 
         public static async Task<string> DownloadWebView2Bootstrapper()
         {
@@ -321,72 +254,19 @@ namespace WV.Win
             }
         }
 
-        public static IntPtr CreateMainWindows(WebView wv)
+        public static IPluginContext CreateContext(IWebView? wv, ILogger log, string name, string? source = null, Action<string>? onDisposed = null)
         {
-            // Registrar clase de ventana principal
-            WNDCLASSEX MainWinClass = new WNDCLASSEX
-            {
-                cbSize = (uint)Marshal.SizeOf(typeof(WNDCLASSEX)),
-                style = 0,
-                lpfnWndProc = Marshal.GetFunctionPointerForDelegate(Helpers.WinProcDelegate),
-                cbClsExtra = 0,
-                cbWndExtra = 0,
-                hInstance = Utils32.HInstance,
-                hIcon = User32.LoadIcon(IntPtr.Zero, Utils32.IDI_APPLICATION),
-                hCursor = User32.LoadCursor(IntPtr.Zero, Utils32.IDC_ARROW),
-                hbrBackground = User32.CreateSolidBrush(Helpers.TransparencyColor),
-                lpszMenuName = null,
-                lpszClassName = wv.UID,  // Debe ser unico para cada ventana
-                hIconSm = User32.LoadIcon(IntPtr.Zero, Utils32.IDI_APPLICATION)
-            };
-
-            if (User32.RegisterClassEx(ref MainWinClass) == 0)
-                throw new Exception("!Error al registrar la clase de la ventana principal! Código de error: " + Marshal.GetLastWin32Error());
-
-            // Crear la ventana utilizando CreateWindowExW (versión Unicode explícita)
-            IntPtr MainhWnd = User32.CreateWindowExW(
-                (int)WinStylesEx.WS_EX_LAYERED, // Habilita ventana con capas para transparencia
-                wv.UID,   // Nombre de la clase registrada, debe ser unica
-                string.Empty, // Título de la ventana, por defecto string vacio
-                (uint)(WinStyles.WS_THICKFRAME | WinStyles.WS_SYSMENU | WinStyles.WS_MINIMIZEBOX | WinStyles.WS_MAXIMIZEBOX),
-                //(uint)(WinStyles.WS_CAPTION | WinStyles.WS_THICKFRAME | WinStyles.WS_MINIMIZEBOX | WinStyles.WS_MAXIMIZEBOX),
-                Utils32.CW_USEDEFAULT,
-                Utils32.CW_USEDEFAULT,
-                AppManager.MinWindowWidth,
-                AppManager.MinWindowWidth,
-                IntPtr.Zero,    // hWnd de ventana padre !TODO
-                IntPtr.Zero,
-                Utils32.HInstance,
-                IntPtr.Zero
-            );
-
-            if (MainhWnd == IntPtr.Zero)
-                throw new Exception("!!!Error al crear la ventana. Código de error: " + Marshal.GetLastWin32Error());
-
-            // Guardando instancia de WebView en diccionario
-            Helpers.WinInstances.Add(MainhWnd, wv);
-
-            // Establecer el color clave para la transparencia
-            User32.SetLayeredWindowAttributes(MainhWnd, Helpers.TransparencyColor, 0, DWFlags.LWA_COLORKEY);
-
-            return MainhWnd;
+            return WV.Core.Utils.CreateContext(wv, log, name, source, onDisposed);
         }
 
-        public static string GetUID()
+        public static double INCH2CM(double value)
         {
-            return Guid.NewGuid().ToString();
+            return value * 2.54;
         }
 
-        public static IContext CreateContext(IWebView? wv, ILogger log, string name, string? source = null, Action<string>? onDisposed = null)
+        public static double CM2INCH(double value)
         {
-            ILogger logger = log;
-
-            if(wv != null)
-                logger = string.IsNullOrEmpty(source) ? log.ForSource(name) : log.ForSource($"{source}:{name}");
-
-            string uid = Helpers.GetUID();
-            return new Context(wv, logger, uid, name, onDisposed);
+            return value / 2.54;
         }
-
     }
 }

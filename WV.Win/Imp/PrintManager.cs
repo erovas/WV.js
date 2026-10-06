@@ -1,374 +1,218 @@
-﻿using WV.Enums;
+﻿using Microsoft.Web.WebView2.Core;
+using WV.Configs;
+using WV.Core;
+using WV.Enums;
 using WV.Interfaces;
-using static WV.AppManager;
-using Microsoft.Web.WebView2.Core;
 
 namespace WV.Win.Imp
 {
-    public class PrintManager : Plugin, IPrintManager
+    public class PrintManager : PrintManagerCore, IPrintManager
     {
-        #region Statics
+        #region Fields
 
-        private static double INCH2CM(double value)
-        {
-            return value * 2.54;
-        }
-
-        private static double CM2INCH(double value)
-        {
-            return value / 2.54;
-        }
+        private CoreWebView2PrintSettings? _printSettings;
+        private bool _isBusy;
 
         #endregion
 
-        //=======================================//
-
-        private CoreWebView2PrintSettings? _PrintSettings;
-        private CoreWebView2PrintSettings? PrintSettings 
+        private CoreWebView2PrintSettings PrintSettings 
         {
-            get => _PrintSettings;
-            set
+            get
             {
-                _PrintSettings = value;
-                _PrintSettings!.PageWidth = CM2INCH(21);
-                _PrintSettings!.PageHeight = CM2INCH(29.7);
+                if (_printSettings is null)
+                    _printSettings = CreatePrintSettings() ?? throw new NullReferenceException();
+
+                return _printSettings;
             }
         }
-        private WebView WV => (WebView)this.WebView;
+
+        private CoreWebView2Controller WVController => ((WebView)this.WebView).InternalBrowser.WVController;
 
         //=======================================//
 
-        #region Events 
+        public PrintManager(IPluginContext ctx, PrintManagerConfig printManagerConfig) : base(ctx, printManagerConfig)
+        {
+            
+        }
 
-        public event WVEventHandler<PrintStatus, string>? PrintFinished;
-
-        #endregion
-
-        public PrintManager(IContext ctx) : base(ctx)
+        protected override void Initialize(IPluginContext context, PrintManagerConfig printManagerConfig)
         {
             
         }
 
         #region Properties
 
-        public bool IsBusy { get; private set; }
+        protected override bool IsBusyCore => _isBusy;
 
-        public PrintOrientation Orientation 
+        protected override PrintOrientation OrientationCore
         { 
             get
             {
-                ThrowIfDisposed();
-                return (PrintOrientation)this.PrintSettings!.Orientation;
+                return (PrintOrientation)this.PrintSettings.Orientation;
             }
             set
             {
-                ThrowIfDisposed();
-
-                if(value == this.Orientation)
+                if(value == this.OrientationCore)
                     return;
 
-                this.PrintSettings!.Orientation = (CoreWebView2PrintOrientation)value;
+                this.PrintSettings.Orientation = (CoreWebView2PrintOrientation)value;
             }
         }
-        
-        public string OrientationText 
+
+        protected override string OrientationTextCore
         { 
-            get => this.Orientation.ToString();
+            get => this.OrientationCore.ToString();
             set
             {
                 if (Enum.TryParse(value, out PrintOrientation orientation))
-                    this.Orientation = orientation;
+                    this.OrientationCore = orientation;
             }
         }
 
         #region MARGIN
 
-        public double MarginBottom 
+        protected override double MarginBottomCore
         { 
-            get
-            {
-                ThrowIfDisposed();
-                return INCH2CM(this.PrintSettings!.MarginBottom);
-            }
-            set 
-            {
-                ThrowIfDisposed();
-                this.PrintSettings!.MarginBottom = CM2INCH(value);
-            }
+            get => Utils.INCH2CM(this.PrintSettings.MarginBottom);
+            set => this.PrintSettings.MarginBottom = Utils.CM2INCH(value);
         }
 
-        public double MarginLeft
+        protected override double MarginLeftCore
         {
-            get
-            {
-                ThrowIfDisposed();
-                return INCH2CM(this.PrintSettings!.MarginLeft);
-            }
-            set
-            {
-                ThrowIfDisposed();
-                this.PrintSettings!.MarginLeft = CM2INCH(value);
-            }
+            get => Utils.INCH2CM(this.PrintSettings.MarginLeft);
+            set => this.PrintSettings.MarginLeft = Utils.CM2INCH(value);
         }
 
-        public double MarginRight
+        protected override double MarginRightCore
         {
-            get
-            {
-                ThrowIfDisposed();
-                return INCH2CM(this.PrintSettings!.MarginRight);
-            }
-            set
-            {
-                ThrowIfDisposed();
-                this.PrintSettings!.MarginRight = CM2INCH(value);
-            }
+            get => Utils.INCH2CM(this.PrintSettings.MarginRight);
+            set => this.PrintSettings.MarginRight = Utils.CM2INCH(value);
         }
 
-        public double MarginTop
+        protected override double MarginTopCore
         {
-            get
-            {
-                ThrowIfDisposed();
-                return INCH2CM(this.PrintSettings!.MarginTop);
-            }
-            set
-            {
-                ThrowIfDisposed();
-                this.PrintSettings!.MarginTop = CM2INCH(value);
-            }
+            get => Utils.INCH2CM(this.PrintSettings.MarginTop);
+            set => this.PrintSettings.MarginTop = Utils.CM2INCH(value);
         }
 
         #endregion
 
         #region PAGE SIZE
 
-        public double PageWidth 
+        protected override double PageWidthCore
         { 
-            get
-            {
-                ThrowIfDisposed();
-                return INCH2CM(this.PrintSettings!.PageWidth);
-            }
-            set
-            {
-                ThrowIfDisposed();
-                this.PrintSettings!.PageWidth = CM2INCH(value);
-            }
+            get => Utils.INCH2CM(this.PrintSettings.PageWidth);
+            set => this.PrintSettings.PageWidth = Utils.CM2INCH(value);
         }
 
-        public double PageHeight
+        protected override double PageHeightCore
         {
-            get
-            {
-                ThrowIfDisposed();
-                return INCH2CM(this.PrintSettings!.PageHeight);
-            }
-            set
-            {
-                ThrowIfDisposed();
-                this.PrintSettings!.PageHeight = CM2INCH(value);
-            }
+            get => Utils.INCH2CM(this.PrintSettings.PageHeight);
+            set => this.PrintSettings!.PageHeight = Utils.CM2INCH(value);
         }
 
         #endregion
 
 
-        public double ScaleFactor 
+        protected override double ScaleFactorCore
         { 
-            get
-            {
-                ThrowIfDisposed();
-                return this.PrintSettings!.ScaleFactor;
-            }
-            set
-            {
-                ThrowIfDisposed();
-                this.PrintSettings!.ScaleFactor = value;
-            }
+            get => this.PrintSettings.ScaleFactor;
+            set => this.PrintSettings.ScaleFactor = value;
         }
 
-        public bool PrintBackgrounds 
+        protected override bool PrintBackgroundsCore
         { 
-            get
-            {
-                ThrowIfDisposed();
-                return this.PrintSettings!.ShouldPrintBackgrounds;
-            }
-            set
-            {
-                ThrowIfDisposed();
-                this.PrintSettings!.ShouldPrintBackgrounds = value;
-            }
+            get => this.PrintSettings.ShouldPrintBackgrounds;
+            set => this.PrintSettings!.ShouldPrintBackgrounds = value;
         }
 
-        public bool PrintSelectionOnly
+        protected override bool PrintSelectionOnlyCore
         {
-            get
-            {
-                ThrowIfDisposed();
-                return this.PrintSettings!.ShouldPrintSelectionOnly;
-            }
-            set
-            {
-                ThrowIfDisposed();
-                this.PrintSettings!.ShouldPrintSelectionOnly = value;
-            }
+            get => this.PrintSettings.ShouldPrintSelectionOnly;
+            set => this.PrintSettings.ShouldPrintSelectionOnly = value;
         }
 
-        public bool PrintHeaderAndFooter
+        protected override bool PrintHeaderAndFooterCore
         {
-            get
-            {
-                ThrowIfDisposed();
-                return this.PrintSettings!.ShouldPrintHeaderAndFooter;
-            }
-            set
-            {
-                ThrowIfDisposed();
-                this.PrintSettings!.ShouldPrintHeaderAndFooter = value;
-            }
+            get => this.PrintSettings.ShouldPrintHeaderAndFooter;
+            set => this.PrintSettings.ShouldPrintHeaderAndFooter = value;
         }
 
-        public string FooterUri
+        protected override string FooterUriCore
         {
-            get 
-            {
-                ThrowIfDisposed();
-                return this.PrintSettings!.FooterUri;
-            }
-            set
-            {
-                ThrowIfDisposed();
-                this.PrintSettings!.FooterUri = value;
-            }
+            get => this.PrintSettings.FooterUri;
+            set => this.PrintSettings.FooterUri = value;
         }
 
-        public string PageRanges
+        protected override string PageRangesCore
         {
-            get
-            {
-                ThrowIfDisposed();
-                return this.PrintSettings!.PageRanges;
-            }
-            set
-            {
-                ThrowIfDisposed();
-                this.PrintSettings!.PageRanges = value;
-            }
+            get => this.PrintSettings.PageRanges;
+            set => this.PrintSettings.PageRanges = value;
         }
 
-        public int Copies
+        protected override int CopiesCore
         {
-            get
-            {
-                ThrowIfDisposed();
-                return this.PrintSettings!.Copies;
-            }
-            set
-            {
-                ThrowIfDisposed();
-                this.PrintSettings!.Copies = value;
-            }
+            get => this.PrintSettings!.Copies;
+            set => this.PrintSettings!.Copies = value;
         }
 
-        public int PagesPerSide
+        protected override int PagesPerSideCore
         {
-            get
-            {
-                ThrowIfDisposed();
-                return this.PrintSettings!.PagesPerSide;
-            }
-            set
-            {
-                ThrowIfDisposed();
-                this.PrintSettings!.PagesPerSide = value;
-            }
+            get => this.PrintSettings.PagesPerSide;
+            set => this.PrintSettings.PagesPerSide = value;
         }
 
-        public string PrinterName
+        protected override string PrinterNameCore
         {
-            get
-            {
-                ThrowIfDisposed();
-                return this.PrintSettings!.PrinterName;
-            }
-            set
-            {
-                ThrowIfDisposed();
-                this.PrintSettings!.PrinterName = value;
-            }
+            get => this.PrintSettings.PrinterName;
+            set => this.PrintSettings.PrinterName = value;
         }
 
-        public PrintDuplex Duplex
+        protected override PrintDuplex DuplexCore
         {
-            get 
-            {
-                ThrowIfDisposed();
-                return (PrintDuplex)this.PrintSettings!.Duplex;
-            }
-            set 
-            { 
-                ThrowIfDisposed();
-                this.PrintSettings!.Duplex = (CoreWebView2PrintDuplex)value;
-            }
+            get => (PrintDuplex)this.PrintSettings.Duplex;
+            set => this.PrintSettings.Duplex = (CoreWebView2PrintDuplex)value;
         }
-        
-        public string DuplesText 
+
+        protected override string DuplesTextCore
         { 
-            get => this.Duplex.ToString();
+            get => this.DuplexCore.ToString();
             set
             {
                 if (Enum.TryParse(value, out PrintDuplex Duplex))
-                    this.Duplex = Duplex;
+                    this.DuplexCore = Duplex;
             }
         }
 
-        public PrintColorMode ColorMode
+        protected override PrintColorMode ColorModeCore
         {
-            get
-            {
-                ThrowIfDisposed();
-                return (PrintColorMode)this.PrintSettings!.ColorMode;
-            }
-            set
-            {
-                ThrowIfDisposed();
-                this.PrintSettings!.ColorMode = (CoreWebView2PrintColorMode)value;
-            }
+            get => (PrintColorMode)this.PrintSettings.ColorMode;
+            set => this.PrintSettings.ColorMode = (CoreWebView2PrintColorMode)value;
         }
 
-        public string ColorModeText
+        protected override string ColorModeTextCore
         {
-            get => this.ColorMode.ToString();
+            get => this.ColorModeCore.ToString();
             set
             {
                 if (Enum.TryParse(value, out PrintColorMode color))
-                    this.ColorMode = color;
+                    this.ColorModeCore = color;
             }
         }
 
-        public PrintCollation Collation
+        protected override PrintCollation CollationCore
         {
-            get
-            {
-                ThrowIfDisposed();
-                return (PrintCollation)this.PrintSettings!.Collation;
-            }
-            set
-            {
-                ThrowIfDisposed();
-                this.PrintSettings!.Collation = (CoreWebView2PrintCollation)value;
-            }
+            get => (PrintCollation)this.PrintSettings.Collation;
+            set => this.PrintSettings.Collation = (CoreWebView2PrintCollation)value;
         }
 
-        public string CollationText
+        protected override string CollationTextCore
         {
-            get => this.Collation.ToString();
+            get => this.CollationCore.ToString();
             set
             {
                 if (Enum.TryParse(value, out PrintCollation collation))
-                    this.Collation = collation;
+                    this.CollationCore = collation;
             }
         }
 
@@ -378,81 +222,70 @@ namespace WV.Win.Imp
 
         #region Methods
 
-        public void Print()
+        protected override void PrintCore()
         {
-            ThrowIfDisposed();
-
-            if (this.IsBusy || this.PrintSettings == null || this.WV.WVController == null)
+            if (_isBusy || WVController == null)
                 return;
 
-            this.IsBusy = true;
+            _isBusy = true;
 
             Task.Run(async () =>
             {
-                if (this.PrintSettings == null || this.WV.WVController == null)
+                if (WVController == null)
                 {
-                    this.IsBusy = false;
+                    _isBusy = false;
                     return;
                 }
 
-                var result = await this.WV.WVController.CoreWebView2.PrintAsync(this.PrintSettings);
-                this.FireEvent((PrintStatus)result);
-                this.IsBusy = false;
+                var result = await WVController.CoreWebView2.PrintAsync(this.PrintSettings);
+                _isBusy = false;
+                this.FirePrintFinishedEvent((PrintStatus)result);
             });
         }
 
-        public void PrintToPDF(string ResultFilePath)
+        protected override void PrintToPDFCore(string ResultFilePath)
         {
-            ThrowIfDisposed();
-
-            if (this.IsBusy || this.PrintSettings == null || this.WV.WVController == null)
+            if (this.IsBusy || WVController == null)
                 return;
 
-            this.IsBusy = true;
+            _isBusy = true;
 
             Task.Run(async () =>
             {
-                if (this.PrintSettings == null || this.WV.WVController == null)
+                if (WVController == null)
                 {
-                    this.IsBusy = false;
+                    _isBusy = false;
                     return;
                 }
 
-                bool result = await this.WV.WVController.CoreWebView2.PrintToPdfAsync(ResultFilePath ,this.PrintSettings);
+                bool result = await WVController.CoreWebView2.PrintToPdfAsync(ResultFilePath ,this.PrintSettings);
                 PrintStatus status = result ? PrintStatus.Succeeded : PrintStatus.OtherError;
-                this.FireEvent(status);
-                this.IsBusy = false;
+                _isBusy = false;
+                this.FirePrintFinishedEvent(status);
             });
         }
 
         #endregion
 
-        //=======================================//
 
-        #region Protected Methods
-
-        protected override void ThrowIfDisposed()
+        protected override void Dispose(bool disposing)
         {
-            base.ThrowIfDisposed();
-            Plugin.ThrowIfDisposed(this.WV);
-        }
+            if (!disposing)
+                return;
 
-        #endregion
+            _printSettings = null;
+        }
 
         //=======================================//
 
         #region Internal Methods
 
-        internal void ClearAllEvents()
+        internal void ToDefault()
         {
             this.ClearListeners();
             this.ClearEvents();
-        }
-
-        internal void ToDefault()
-        {
-            this.PrintSettings = this.WV.WVController?.CoreWebView2.Environment.CreatePrintSettings();
-            this.IsBusy = false;
+            _printSettings = CreatePrintSettings();
+            _isBusy = false;
         }
 
         #endregion
@@ -461,12 +294,16 @@ namespace WV.Win.Imp
 
         #region Private Methods
 
-        private void FireEvent(PrintStatus status)
+        private CoreWebView2PrintSettings? CreatePrintSettings()
         {
-            if (this.Disposed)
-                return;
+            var pm = WVController?.CoreWebView2.Environment.CreatePrintSettings();
 
-            this.PrintFinished?.Invoke(this.WV, status, status.ToString());
+            if(pm is null)
+                return null;
+
+            pm.PageWidth = Utils.CM2INCH(21);
+            pm.PageHeight = Utils.CM2INCH(29.7);
+            return pm;
         }
 
         #endregion

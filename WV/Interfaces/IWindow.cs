@@ -1,10 +1,12 @@
-﻿using static WV.AppManager;
+﻿using static WV.App.Delegates;
 using WV.Enums;
 
 namespace WV.Interfaces
 {
-    public interface IWindow
+    public interface IWindow : IDisposable
     {
+        #region Events
+
         /// <summary>
         /// StateChanged event.
         /// </summary>
@@ -43,16 +45,18 @@ namespace WV.Interfaces
         /// <summary>
         /// Raw event for platform specific
         /// </summary>
-        event WVSysEventHandler Raw;
+        event WVRawEventHandler Raw;
 
-        #region PROPS
+        #endregion
+
+        //-------------------------------------------//
+
+        #region Properties
 
         /// <summary>
         /// Gets a Rect object.
         /// </summary>
         IRect Rect { get; }
-
-        //-------------------------------------------//
 
         /// <summary>
         /// Gets or sets windows state.
@@ -119,7 +123,7 @@ namespace WV.Interfaces
 
         //-------------------------------------------//
 
-        #region METHODS
+        #region Methods
 
         /// <summary>
         /// Moves the window to the center of the screen
@@ -210,64 +214,6 @@ namespace WV.Interfaces
         /// Normalize the window
         /// </summary>
         void Normalize();
-
-        #endregion
-
-        //-------------------------------------------//
-
-        #region EVENTS
-
-        /// <summary>
-        /// State changed event JS.
-        /// </summary>
-        //object? OnStateChanged { get; set; }
-
-        /// <summary>
-        /// Close event JS
-        /// <para>
-        /// fired when the PreventClose property is true.
-        /// </para>
-        /// </summary>
-        //object? OnClosing { get; set; }
-
-        /// <summary>
-        /// Position changed event JS.
-        /// </summary>
-        //object? OnPositionChanged { get; set; }
-
-        /// <summary>
-        /// Activated event JS.
-        /// </summary>
-        //object? OnActivated { get; set; }
-
-        /// <summary>
-        /// Enabled event JS.
-        /// </summary>
-        //public object? OnEnabled { get; set; }
-
-        /// <summary>
-        /// Visible event JS.
-        /// </summary>
-        //object? OnVisible { get; set; }
-
-        /// <summary>
-        /// Size Changed event JS.
-        /// </summary>
-        //public object? OnSizeChanged { get; set; }
-
-        /// <summary>
-        /// Appends an event listener for events whose type attribute value is type.
-        /// </summary>
-        /// <param name="type"></param>
-        /// <param name="callback"></param>
-        //void AddEventListener(string type, object callback);
-
-        /// <summary>
-        /// Removes the event listener in target's event listener list with the same type and callback.
-        /// </summary>
-        /// <param name="type"></param>
-        /// <param name="callback"></param>
-        //void RemoveEventListener(string type, object callback);
 
         #endregion
 

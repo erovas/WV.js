@@ -2,9 +2,9 @@
 
 namespace WV.Interfaces
 {
-    public interface IContextMenu
+    public interface IContextMenu : IDisposable
     {
-        #region PROPS
+        #region Properties
 
         /// <summary>
         /// Enable or disable context menu.
@@ -18,7 +18,9 @@ namespace WV.Interfaces
 
         #endregion
 
-        #region PROPS Native Items
+        //-------------------------------------------//
+
+        #region Properties Native Items
 
         /// <summary>
         /// Enable or disable native items.
@@ -95,7 +97,9 @@ namespace WV.Interfaces
 
         #endregion
 
-        #region METHODS
+        //-------------------------------------------//
+
+        #region Methods
 
         /// <summary>
         /// Create an IContextMenuItem instance.

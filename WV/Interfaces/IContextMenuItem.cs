@@ -2,7 +2,7 @@
 {
     public interface IContextMenuItem : IDisposable
     {
-        #region PROPS
+        #region Properties
 
         /// <summary>
         /// Text to show.
@@ -51,7 +51,9 @@
 
         #endregion
 
-        #region METHODS
+        //-------------------------------------------//
+
+        #region Methods
 
         /// <summary>
         /// Add the item to the end of the submenu.

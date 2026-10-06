@@ -1,6 +1,6 @@
 ﻿using WV.Interfaces;
 
-namespace WV.Win.Imp
+namespace WV
 {
     /// <summary>
     /// Contexto de ejecución de un plugin.
@@ -12,7 +12,7 @@ namespace WV.Win.Imp
     /// referencias a objetos que pertenecen a otros (host, logger, delegate del host).
     /// Para romper el grafo de referencias cuando el plugin se libera, usa <see cref="Release"/>.
     /// </summary>
-    public sealed class Context : IContext
+    internal sealed class PluginContext : IPluginContext
     {
         internal IWebView? _webview;
         private Action<string>? _onDisposed;
@@ -43,14 +43,14 @@ namespace WV.Win.Imp
         /// Callback que el webview registró para enterarse de la liberación del plugin.
         /// Puede ser null tras llamar a <see cref="Release"/>.
         /// </summary>
-        public Action<string>? OnDisposed => Volatile.Read(ref _onDisposed);
+        internal Action<string>? OnDisposed => Volatile.Read(ref _onDisposed);
 
         /// <summary>
         /// Indica si el contexto ya fue liberado con <see cref="Release"/>.
         /// </summary>
-        public bool IsReleased => Volatile.Read(ref _released) == 1;
+        internal bool IsReleased => Volatile.Read(ref _released) == 1;
 
-        public Context(IWebView? webview, ILogger logger, string uid, string name, Action<string>? onDisposed = null)
+        internal PluginContext(IWebView? webview, ILogger logger, string uid, string name, Action<string>? onDisposed = null)
         {
             _webview = webview;
             Logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -69,7 +69,7 @@ namespace WV.Win.Imp
         ///
         /// Es idempotente y thread-safe.
         /// </summary>
-        public void Release()
+        internal void Release()
         {
             // Garantiza una sola ejecución aunque varios hilos lo llamen.
             if (Interlocked.Exchange(ref _released, 1) == 1)

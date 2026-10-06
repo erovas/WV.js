@@ -1,10 +1,12 @@
 ﻿using WV.Enums;
-using static WV.AppManager;
+using static WV.App.Delegates;
 
 namespace WV.Interfaces
 {
-    public interface IBrowser
+    public interface IBrowser : IDisposable
     {
+        #region Events
+
         /// <summary>
         /// PlayingAudio Event C#
         /// </summary>
@@ -25,7 +27,11 @@ namespace WV.Interfaces
         /// </summary>
         event WVEventHandler<string> StatusBarTextChanged;
 
-        #region PROPS
+        #endregion
+
+        //-------------------------------------------//
+
+        #region Properties
 
         /// <summary>
         /// Gets the URI of the current top level document.
@@ -117,7 +123,7 @@ namespace WV.Interfaces
         /// <summary>
         /// When WebView is reload, reset all settings to default. Default value is false.
         /// </summary>
-        bool ResetWebViewOnReload { get; set; }
+        //bool ResetWebViewOnReload { get; set; }
 
         /// <summary>
         /// Determines whether the default context menus are shown to the user in WebView.
@@ -137,6 +143,11 @@ namespace WV.Interfaces
         string StatusBarText { get; }
 
         /// <summary>
+        /// 
+        /// </summary>
+        bool StatusBarEnabled { get; set; }
+
+        /// <summary>
         /// Get current language.
         /// </summary>
         string Language { get; }
@@ -151,11 +162,16 @@ namespace WV.Interfaces
         /// </summary>
         string ColorSchemeText { get; set; }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        string Directory { get; }
+
         #endregion
 
         //-------------------------------------------//
 
-        #region METHODS
+        #region Methods
 
         /// <summary>
         /// Open developer tools [DevTools].
@@ -201,46 +217,6 @@ namespace WV.Interfaces
         /// Navigates the WebView to the next page in the navigation history.
         /// </summary>
         void GoForward();
-
-        #endregion
-
-        //-------------------------------------------//
-
-        #region EVENTS
-
-        /// <summary>
-        /// Playing Audio event JS.
-        /// </summary>
-        //object? OnPlayingAudio { get; set; }
-
-        /// <summary>
-        /// Muted Event JS.
-        /// </summary>
-        //object? OnMuted {  get; set; }
-
-        /// <summary>
-        /// ZoomFactor changed event JS.
-        /// </summary>
-        //object? OnZoomFactorChanged { get; set; }
-
-        /// <summary>
-        /// StatusBarTextChanged event JS 
-        /// </summary>
-        //object? OnStatusBarTextChanged { get; set; }
-
-        /// <summary>
-        /// Appends an event listener for events whose type attribute value is type.
-        /// </summary>
-        /// <param name="type"></param>
-        /// <param name="listener"></param>
-        //void AddEventListener(string type, object listener);
-
-        /// <summary>
-        /// Removes the event listener in target's event listener list with the same type and callback.
-        /// </summary>
-        /// <param name="type"></param>
-        /// <param name="listener"></param>
-        //void RemoveEventListener(string type, object listener);
 
         #endregion
 

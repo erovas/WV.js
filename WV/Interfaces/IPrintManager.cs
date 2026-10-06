@@ -1,13 +1,19 @@
 ﻿using WV.Enums;
-using static WV.AppManager;
+using static WV.App.Delegates;
 
 namespace WV.Interfaces
 {
-    public interface IPrintManager
+    public interface IPrintManager : IDisposable
     {
+        #region Events
+
         event WVEventHandler<PrintStatus, string> PrintFinished;
 
-        #region PROPS
+        #endregion
+
+        //-------------------------------------------//
+
+        #region Properties
 
         /// <summary>
         /// Gets a value indicating that the printmanager is printing.
@@ -197,7 +203,9 @@ namespace WV.Interfaces
 
         #endregion
 
-        #region METHODS
+        //-------------------------------------------//
+
+        #region Methods
 
         /// <summary>
         /// Print the current web page to the specified printer with the provided settings.
@@ -212,23 +220,5 @@ namespace WV.Interfaces
 
         #endregion
 
-        /// <summary>
-        /// PrintFinished event.
-        /// </summary>
-        //object? OnPrintFinished { get; set; }
-
-        /// <summary>
-        /// Appends an event listener for events whose type attribute value is type.
-        /// </summary>
-        /// <param name="type"></param>
-        /// <param name="callback"></param>
-        //void AddEventListener(string type, object callback);
-
-        /// <summary>
-        /// Removes the event listener in target's event listener list with the same type and callback.
-        /// </summary>
-        /// <param name="type"></param>
-        /// <param name="callback"></param>
-        //void RemoveEventListener(string type, object callback);
     }
 }

@@ -1,128 +1,82 @@
-﻿using WV.Enums;
-using WV.Win.Win32;
+﻿using System.Runtime.InteropServices;
+using WV.Configs;
+using WV.Core.Windowing;
+using WV.Enums;
 using WV.Interfaces;
+using WV.Win.Win32;
 using WV.Win.Win32.Structs;
-using System.Runtime.InteropServices;
 
 namespace WV.Win.Imp
 {
-    public class Rect : IRect
+    public sealed class Rect : RectCore
     {
-        #region Helpers
+        #region Fields
 
-        private const uint MONITOR_DEFAULTTONEAREST = 0x00000002;
-
-        internal static RECT GetRECT(WebView wv)
-        {
-            Window win = wv.InternalWindow;
-
-            // La ventana está actualmente Minimizada
-            if (win.State == WindowState.Minimized)
-            {
-                WINDOWPLACEMENT placement = new WINDOWPLACEMENT();
-                placement.length = Marshal.SizeOf(placement);
-                User32.GetWindowPlacement(wv.Handle, ref placement);
-
-                // Estaba Normalizada antes de ser minimizada
-                if (win.LastState == WindowState.Normalized)
-                    return placement.rcNormalPosition;
-
-                // Estaba Maximizada antes de ser minimizada
-                //POINT ptMax = placement.ptMaxPosition;    // Siempre es X = 0 y Y = 0, No sirve
-                //RECT normalRect = placement.rcNormalPosition;
-                //POINT ptMax = new POINT
-                //{
-                //    x = (normalRect.Left + normalRect.Right) / 2,
-                //    y = (normalRect.Top + normalRect.Bottom) / 2
-                //};
-
-                // Encontrar el monitor asociado a ptMaxPosition
-                //IntPtr hMonitor = User32.MonitorFromPoint(ptMax, MONITOR_DEFAULTTONEAREST);
-                IntPtr hMonitor = User32.MonitorFromWindow(wv.Handle, MONITOR_DEFAULTTONEAREST);
-                MONITORINFO monitorInfo = new MONITORINFO();
-                monitorInfo.cbSize = Marshal.SizeOf(monitorInfo);
-                User32.GetMonitorInfo(hMonitor, ref monitorInfo);
-                return monitorInfo.rcWork;
-            }
-
-            // La ventana esta Normalizada o Maximizada
-            User32.GetWindowRect(wv.Handle, out RECT rect);
-
-            if (wv.WVController != null) 
-            {
-                rect.Right = rect.X + wv.WVController.Bounds.Width;
-                rect.Bottom = rect.Y + wv.WVController.Bounds.Height;
-            }
-
-            return rect;
-        }
-
-        private static void SetRECT(WebView wv, int X, int Y, int Width, int Height)
-        {
-            User32.MoveWindow(wv.Handle, X, Y, Width, Height, true);
-        }
+        private Window? _Win;
 
         #endregion
 
-        private WebView WV { get; }
-        private Window Win => this.WV.InternalWindow;
+        private WebView WV => (WebView)this.WebView;
+        private Window Win => _Win!;
+        private readonly RectConfig _Config;
 
-        public Rect(WebView wv)
+        public Rect(IPluginContext context, RectConfig rectConfig, Window win) : base(context, rectConfig)
         {
-            WV = wv;
+            _Win = win;
+            _Config = rectConfig;
+        }
+
+        protected override void Initialize(IPluginContext context, RectConfig rectConfig)
+        {
+            if(_Win != null)
+                SetUpRect(this, rectConfig);
         }
 
         //-------------------------------------------//
 
         #region Position
 
-        public int X
+        protected override int XCore
         {
             get 
             {
-                ThrowIfDisposed();
-                return GetRECT(WV).X;
+                return Utils32.GetRECT(WV).X;
             } 
             set
             {
-                ThrowIfDisposed();
-
                 if(this.Win.State == WindowState.Minimized)
                     return;
 
-                RECT rect = GetRECT(this.WV);
+                RECT rect = Utils32.GetRECT(this.WV);
 
                 if (rect.X == value)
                     return;
 
-                this.Win.PreventPositionEvent = true;
-                SetRECT(WV, value, rect.Y, rect.Width, rect.Height);
-                this.Win.PreventPositionEvent = false;
+                this.Win._PreventPositionEvent = true;
+                Utils32.SetRECT(WV, value, rect.Y, rect.Width, rect.Height);
+                this.Win._PreventPositionEvent = false;
             }
         }
 
-        public int Y
+        protected override int YCore
         {
             get 
             {
-                ThrowIfDisposed();
-                return GetRECT(WV).Y;
+                return Utils32.GetRECT(WV).Y;
             } 
             set
             {
-                ThrowIfDisposed();
-
                 if (this.Win.State == WindowState.Minimized)
                     return;
 
-                RECT rect = GetRECT(this.WV);
+                RECT rect = Utils32.GetRECT(this.WV);
 
                 if (rect.Y == value)
                     return;
 
-                this.Win.PreventPositionEvent = true;
-                SetRECT(WV, rect.X, value, rect.Width, rect.Height);
-                this.Win.PreventPositionEvent = false;
+                this.Win._PreventPositionEvent = true;
+                Utils32.SetRECT(WV, rect.X, value, rect.Width, rect.Height);
+                this.Win._PreventPositionEvent = false;
             }
         }
 
@@ -132,21 +86,18 @@ namespace WV.Win.Imp
 
         #region Size
 
-        public int Width
+        protected override int WidthCore
         {
             get
             {
-                ThrowIfDisposed();
-                return GetRECT(WV).Width;
+                return Utils32.GetRECT(WV).Width;
             }
             set
             {
-                ThrowIfDisposed();
-
                 if (this.Win.State == WindowState.Minimized)
                     return;
 
-                RECT rect = GetRECT(this.WV);
+                RECT rect = Utils32.GetRECT(this.WV);
 
                 if (rect.Width == value)
                     return;
@@ -156,28 +107,25 @@ namespace WV.Win.Imp
                 else if (value < MinWidth)
                     value = MinWidth;
 
-                this.Win.PreventSizeEvent = true;
-                SetRECT(WV, rect.X, rect.Y, value, rect.Height);
-                this.Win.PreventSizeEvent = false;
+                this.Win._PreventSizeEvent = true;
+                Utils32.SetRECT(WV, rect.X, rect.Y, value, rect.Height);
+                this.Win._PreventSizeEvent = false;
             }
         }
 
-        public int Height
+        protected override int HeightCore
         {
             get
-            {
-                ThrowIfDisposed();              
+            {       
                 // La ventana que contiene el WebView es 1 pixel mas bajo cuando está maximizado
-                return GetRECT(WV).Height;
+                return Utils32.GetRECT(WV).Height;
             }
             set
             {
-                ThrowIfDisposed();
-
                 if (this.Win.State == WindowState.Minimized)
                     return;
 
-                RECT rect = GetRECT(this.WV);
+                RECT rect = Utils32.GetRECT(this.WV);
 
                 if (rect.Height == value)
                     return;
@@ -187,9 +135,9 @@ namespace WV.Win.Imp
                 else if (value < MinHeight)
                     value = MinHeight;
 
-                this.Win.PreventSizeEvent = true;
-                SetRECT(WV, rect.X, rect.Y, rect.Width, value);
-                this.Win.PreventSizeEvent = false;
+                this.Win._PreventSizeEvent = true;
+                Utils32.SetRECT(WV, rect.X, rect.Y, rect.Width, value);
+                this.Win._PreventSizeEvent = false;
             }
         }
 
@@ -199,20 +147,17 @@ namespace WV.Win.Imp
 
         #region Max Size
 
-        private int _MaxWidth = AppManager.MaxWindowWidth;
-        private int _MaxHeight = AppManager.MaxWindowHeight;
-       
-        public int MaxWidth
+        private int _MaxWidth = App.Window.Rect.MaxWidth;
+        private int _MaxHeight = App.Window.Rect.MaxHeight;
+
+        protected override int MaxWidthCore
         {
             get 
             { 
-                ThrowIfDisposed(); 
                 return _MaxWidth; 
             }
             set
             {
-                ThrowIfDisposed();
-
                 if (this.Win.State == WindowState.Minimized)
                     return;
 
@@ -226,17 +171,14 @@ namespace WV.Win.Imp
             }
         }
 
-        public int MaxHeight
+        protected override int MaxHeightCore
         {
             get 
             { 
-                ThrowIfDisposed(); 
                 return _MaxHeight; 
             }
             set
             {
-                ThrowIfDisposed();
-
                 if (this.Win.State == WindowState.Minimized)
                     return;
 
@@ -256,22 +198,19 @@ namespace WV.Win.Imp
 
         #region Min Size
 
-        private const int LowMinWidth = AppManager.MinWindowWidth;
-        private const int LowMinHeight = AppManager.MinWindowHeight;
+        private const int LowMinWidth = App.Window.Rect.MinWidth;
+        private const int LowMinHeight = App.Window.Rect.MinHeight;
 
         private int _MinWidth = LowMinWidth;
         private int _MinHeight = LowMinHeight;
-        public int MinWidth
+        protected override int MinWidthCore
         {
             get 
             { 
-                ThrowIfDisposed(); 
                 return _MinWidth; 
             }
             set
             {
-                ThrowIfDisposed();
-
                 if (this.Win.State == WindowState.Minimized)
                     return;
 
@@ -288,17 +227,14 @@ namespace WV.Win.Imp
             }
         }
 
-        public int MinHeight
+        protected override int MinHeightCore
         {
             get 
             { 
-                ThrowIfDisposed(); 
                 return _MinHeight; 
             }
             set
             {
-                ThrowIfDisposed();
-
                 if (this.Win.State == WindowState.Minimized)
                     return;
 
@@ -321,14 +257,12 @@ namespace WV.Win.Imp
 
         #region METHODS
 
-        public void SetSize(int width, int height)
+        protected override void SetSizeCore(int width, int height)
         {
-            ThrowIfDisposed();
-
             if (this.Win.State == WindowState.Minimized)
                     return;
 
-            RECT rect = GetRECT(this.WV);
+            RECT rect = Utils32.GetRECT(this.WV);
 
             if (rect.Width == width && rect.Height == height)
                 return;
@@ -343,76 +277,88 @@ namespace WV.Win.Imp
             else if (height < this.MinHeight)
                 height = this.MinHeight;
 
-            this.Win.PreventSizeEvent = true;
-            SetRECT(WV, rect.X, rect.Y, width, height);
-            this.Win.PreventSizeEvent = false;
+            this.Win._PreventSizeEvent = true;
+            Utils32.SetRECT(WV, rect.X, rect.Y, width, height);
+            this.Win._PreventSizeEvent = false;
         }
 
-        public int[] GetSize()
+        protected override int[] GetSizeCore()
         {
-            ThrowIfDisposed();
-            RECT rect = GetRECT(this.WV);
+            RECT rect = Utils32.GetRECT(this.WV);
             return [rect.Width, rect.Height];
         }
 
-        public void SetPosition(int x, int y)
+        protected override void SetPositionCore(int x, int y)
         {
-            ThrowIfDisposed();
-
             if (this.Win.State == WindowState.Minimized)
                 return;
 
-            RECT rect = GetRECT(this.WV);
+            RECT rect = Utils32.GetRECT(this.WV);
 
             if (rect.X == x && rect.Y == y)
                 return;
 
-            this.Win.PreventPositionEvent = true;
-            SetRECT(this.WV, x, y, rect.Width, rect.Height);
-            this.Win.PreventPositionEvent = false;
+            this.Win._PreventPositionEvent = true;
+            Utils32.SetRECT(this.WV, x, y, rect.Width, rect.Height);
+            this.Win._PreventPositionEvent = false;
         }
 
-        public int[] GetPosition()
+        protected override int[] GetPositionCore()
         {
-            ThrowIfDisposed();
-            RECT rect = GetRECT(this.WV);
+            RECT rect = Utils32.GetRECT(this.WV);
             return [rect.X, rect.Y];
         }
 
-        public void SetPositionAndSize(int x, int y, int width, int height)
+        protected override void SetPositionAndSizeCore(int x, int y, int width, int height)
         {
-            ThrowIfDisposed();
+            if (width > this.MaxWidthCore)
+                width = this.MaxWidthCore;
+            else if (width < this.MinWidthCore)
+                width = this.MinWidthCore;
 
-            if (width > this.MaxWidth)
-                width = this.MaxWidth;
-            else if (width < this.MinWidth)
-                width = this.MinWidth;
+            if (height > this.MaxHeightCore)
+                height = this.MaxHeightCore;
+            else if (height < this.MinHeightCore)
+                height = this.MinHeightCore;
 
-            if (height > this.MaxHeight)
-                height = this.MaxHeight;
-            else if (height < this.MinHeight)
-                height = this.MinHeight;
-
-            this.Win.PreventSizeEvent = true;
-            this.Win.PreventPositionEvent = true;
-            SetRECT(this.WV, x, y, width, height);
-            this.Win.PreventSizeEvent = false;
-            this.Win.PreventPositionEvent = false;
+            this.Win._PreventSizeEvent = true;
+            this.Win._PreventPositionEvent = true;
+            Utils32.SetRECT(this.WV, x, y, width, height);
+            this.Win._PreventSizeEvent = false;
+            this.Win._PreventPositionEvent = false;
         }
 
-        public int[] GetPositionAndSize()
+        protected override int[] GetPositionAndSizeCore()
         {
-            ThrowIfDisposed();
-            RECT rect = GetRECT(this.WV);
+            RECT rect = Utils32.GetRECT(this.WV);
             return [rect.X, rect.Y, rect.Width, rect.Height];
         }
 
         #endregion
 
-        private void ThrowIfDisposed()
+        protected override void Dispose(bool disposing)
         {
-            Plugin.ThrowIfDisposed(this.WV);
+            if (!disposing)
+                return;
+
+            _Win = null;
         }
 
+        internal void ToDefault()
+        {
+            SetUpRect(this, _Config);
+        }
+
+        private static void SetUpRect(Rect rect, RectConfig config)
+        {
+            rect.XCore = config.X;
+            rect.YCore = config.Y;
+
+            rect.MinWidth = config.MinWidth;
+            rect.MinHeight = config.MinHeight;
+
+            rect.MaxWidth = config.MaxWidth;
+            rect.MaxHeight = config.MaxHeight;
+        }
     }
 }

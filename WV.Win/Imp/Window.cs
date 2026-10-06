@@ -4,48 +4,28 @@ using WV.Interfaces;
 using System.Drawing;
 using WV.Win.Win32.Enums;
 using WV.Win.Win32.Structs;
-using static WV.AppManager;
 using Microsoft.Web.WebView2.Core;
 using System.Runtime.InteropServices;
+using WV.Core.Windowing;
+using WV.Configs;
 
 namespace WV.Win.Imp
 {
-    public class Window : Plugin, IWindow
+    public sealed class Window : WindowCore, IWindow
     {
         private WebView WV => (WebView)this.WebView;
-        private IntPtr Handle => this.WV.Handle;
-        internal Rect InternalRect { get; }
-
-        //=======================================//
-
-        #region Events
-
-        public event WVEventHandler<WindowState, string>? StateChanged;
-        
-        public event WVEventHandler? Closing;
-
-        public event WVEventHandler<int, int>? PositionChanged;
-
-        public event WVEventHandler<bool>? Activated;
-
-        public event WVEventHandler<bool>? EnabledEvent;
-
-        public event WVEventHandler<bool>? Visible;
-
-        public event WVEventHandler<int, int>? SizeChanged;
-
-        public event WVSysEventHandler? Raw;
-
-        #endregion
+        internal IntPtr Handle { get; private set; }
+        internal UIThreadSyncCtx? WVUIContext { get; private set; }
+        internal Rect InternalRect => (Rect)_Rect!;
 
         //=======================================//
 
         #region Fields
 
         // State
-        private WindowState _State { get; set; } = WindowState.None;
-        internal WindowState LastState { get; set; } = WindowState.None;
-        private bool StateChangeInternal { get; set; } = false;
+        private WindowState _State = WindowState.None;
+        internal WindowState _LastState = WindowState.None;
+        private bool _StateChange = false;
 
 
         private string _Title = string.Empty;
@@ -54,24 +34,39 @@ namespace WV.Win.Imp
         private bool _IsVisible = false;
         private bool _PreventClose;
         private bool _ClickThrough;
+        private readonly WindowConfig _Config;
+        private readonly bool _IsMain;
 
         #endregion
 
-        public Window(IContext ctx) : base(ctx)
+        public Window(IPluginContext ctx, WindowConfig windowConfig) : base(ctx, windowConfig)
         {
-            this.InternalRect = new Rect(this.WV);
+            _Config = windowConfig;
+            _IsMain = WV.InternalIsMain;
+        }
+
+        protected override IRect CreateRect(IPluginContext context, RectConfig rectConfig)
+        {
+            return new Rect(Utils.CreateContext(WebView, Logger, nameof(Rect), Logger.Source), rectConfig, this);
+        }
+
+
+        protected override void Initialize(IPluginContext context, WindowConfig windowConfig)
+        {
+            Handle = Utils32.CreateMainWindows(WV, windowConfig.Title);
+
+            WVUIContext = new UIThreadSyncCtx(Handle);
+            SynchronizationContext.SetSynchronizationContext(WVUIContext);
         }
 
         //=======================================//
-
-        #region Properties
 
         #region Flags
 
         /// <summary>
         /// Para indicar que no se quiere prevenir lanzar evento State
         /// </summary>
-        internal bool PreventStateEvent { get; set; }
+        internal bool _PreventStateEvent;
 
         /// <summary>
         /// Para indicar que no se quiere prevenir lanzar evento Close
@@ -81,98 +76,82 @@ namespace WV.Win.Imp
         /// <summary>
         /// Para indicar que no se quiere prevenir lanzar evento Position
         /// </summary>
-        internal bool PreventPositionEvent { get; set; }
+        internal bool _PreventPositionEvent;
 
         /// <summary>
         /// Para indicar que no se quiere prevenir lanzar evento Activate
         /// </summary>
-        internal bool PreventActivateEvent { get; set; }
+        internal bool _PreventActivateEvent;
 
         /// <summary>
         /// Para indicar que no se quiere prevenir lanzar evento Enable
         /// </summary>
-        internal bool PreventEnableEvent { get; set; }
+        internal bool _PreventEnableEvent;
 
         /// <summary>
         /// Para indicar que no se quiere prevenir lanzar evento Visible
         /// </summary>
-        internal bool PreventVisibleEvent { get; set; }
+        internal bool _PreventVisibleEvent;
 
         /// <summary>
         /// Para indicar que no se quiere prevenir lanzar evento Size
         /// </summary>
-        internal bool PreventSizeEvent { get; set; }
+        internal bool _PreventSizeEvent;
 
         #endregion
 
-        //-------------------------------------------//
+        #region Properties
 
-        public IRect Rect
+        protected override WindowState StateCore
         {
             get
             {
-                ThrowIfDisposed();
-                return this.InternalRect;
-            }
-        }
+                if (_State == WindowState.None)
+                    _State = Utils32.GetCurrentState(this.Handle);
 
-        public WindowState State
-        {
-            get
-            {
-                ThrowIfDisposed();
-
-                if (this._State == WindowState.None)
-                    this._State = Helpers.GetCurrentState(this.Handle);
-
-                return this._State;
+                return _State;
             }
             set
             {
-                ThrowIfDisposed();
-
-                if (!this.IsVisible)
+                if (!this.IsVisibleCore)
                     return;
 
-                if (this.State == value)
+                if (this.StateCore == value)
                     return;
 
                 switch (value)
                 {
                     case WindowState.Minimized:
-                        this.Maximize();
+                        this.MinimizeCore();
                         break;
                     case WindowState.Normalized:
-                        this.Normalize();
+                        this.NormalizeCore();
                         break;
                     case WindowState.Maximized:
-                        this.Maximize();
+                        this.MaximizeCore();
                         break;
                 }
             }
         }
 
-        public string StateText
+        protected override string StateTextCore
         {
-            get => this.State.ToString();
+            get => this.StateCore.ToString();
             set
             {
                 if (Enum.TryParse(value, out WindowState myStates))
-                    this.State = myStates;
+                    this.StateCore = myStates;
             }
         }
 
-        public string Title
+        protected override string TitleCore
         {
             get
             {
-                ThrowIfDisposed();
                 return _Title;
             }
             set
             {
-                ThrowIfDisposed();
-
                 if (_Title == value)
                     return;
 
@@ -183,17 +162,14 @@ namespace WV.Win.Imp
             }
         }
 
-        public bool TopMost
+        protected override bool TopMostCore
         {
             get
             {
-                ThrowIfDisposed();
                 return _TopMost;
             }
             set
             {
-                ThrowIfDisposed();
-
                 if (value == _TopMost)
                     return;
 
@@ -202,17 +178,14 @@ namespace WV.Win.Imp
             }
         }
 
-        public bool Enabled
+        protected override bool EnabledCore
         {
             get
             {
-                ThrowIfDisposed();
                 return _Enabled;
             }
             set
             {
-                ThrowIfDisposed();
-
                 if (value == _Enabled)
                     return;
 
@@ -221,65 +194,31 @@ namespace WV.Win.Imp
             }
         }
 
-        public bool IsVisible
+        protected override bool IsVisibleCore => _IsVisible;
+
+        protected override bool PreventCloseCore
         {
-            get
-            {
-                ThrowIfDisposed();
-                return _IsVisible;
-            }
-            private set => _IsVisible = value;
+            get => _PreventClose;
+            set => _PreventClose = value;
         }
 
-        public bool PreventClose
+        protected override bool IsActiveCore => User32.GetForegroundWindow() == this.Handle;
+
+        protected override bool AllowSnapCore
         {
-            get
-            {
-                ThrowIfDisposed();
-                return _PreventClose;
-            }
-            set
-            {
-                ThrowIfDisposed();
-                _PreventClose = value;
-            }
+            get => Utils32.HasWindowStyle(this.Handle, WinStyles.WS_MAXIMIZEBOX);
+            set => Utils32.SetWinStyle(this.Handle, WinStyles.WS_MAXIMIZEBOX, value);
         }
 
-        public bool IsActive
+        protected override bool ClickThroughCore
         {
             get
             {
-                ThrowIfDisposed();
-                return User32.GetForegroundWindow() == this.Handle;
-            }
-        }
-
-        public bool AllowSnap
-        {
-            get
-            {
-                ThrowIfDisposed();
-                return Utils32.HasWindowStyle(this.Handle, WinStyles.WS_MAXIMIZEBOX);
-            }
-            set
-            {
-                ThrowIfDisposed();
-                Utils32.SetWinStyle(this.Handle, WinStyles.WS_MAXIMIZEBOX, value);
-            }
-        }
-
-        public bool ClickThrough
-        {
-            get
-            {
-                ThrowIfDisposed();
                 return _ClickThrough;
             }
             set
             {
-                ThrowIfDisposed();
-
-                if (value == this.ClickThrough)
+                if (value == _ClickThrough)
                     return;
 
                 int exStyle = User32.GetWindowLong(this.Handle, (int)GetWinLong.GWL_EXSTYLE);
@@ -300,15 +239,13 @@ namespace WV.Win.Imp
 
         #region Methods
 
-        public void ToCenter()
+        protected override void ToCenterCore()
         {
-            ThrowIfDisposed();
-
-            if (this.State != WindowState.Normalized && this.State != WindowState.None)
+            if (this.StateCore != WindowState.Normalized && this.StateCore != WindowState.None)
                 return;
 
             RECT workArea = Utils32.GetWorkArea(this.Handle);
-            RECT wvSize = Imp.Rect.GetRECT(this.WV);
+            RECT wvSize = Utils32.GetRECT(this.WV);
 
             int X = Math.Max(workArea.X, workArea.X + (workArea.Width - wvSize.Width) / 2);
             int Y = Math.Max(workArea.Y, workArea.Y + (workArea.Height - wvSize.Height) / 2);
@@ -316,54 +253,46 @@ namespace WV.Win.Imp
             User32.MoveWindow(this.Handle, X, Y, wvSize.Width, wvSize.Height, true);
         }
 
-        public void Close()
+        protected override void CloseCore()
         {
-            ThrowIfDisposed();
             User32.SendMessage(this.Handle, (uint)WinMsg.WM_CLOSE, 0, 0);
         }
 
-        public void ShowBehind()
+        protected override void ShowBehindCore()
         {
-            ThrowIfDisposed();
-
-            if (this.IsVisible)
+            if (this.IsVisibleCore)
                 return;
 
-            this.PreventStateEvent = true;
-            this.PreventPositionEvent = true;
+            this._PreventStateEvent = true;
+            this._PreventPositionEvent = true;
             User32.ShowWindow(this.Handle, ShowWinCmd.SW_SHOWNA);
-            this.PreventStateEvent = false;
-            this.PreventPositionEvent = false;
+            this._PreventStateEvent = false;
+            this._PreventPositionEvent = false;
         }
 
-        public void Show()
+        protected override void ShowCore()
         {
-            ThrowIfDisposed();
-
-            if (this.IsVisible)
+            if (this.IsVisibleCore)
                 return;
 
-            this.PreventStateEvent = true;
-            this.PreventPositionEvent = true;
+            this._PreventStateEvent = true;
+            this._PreventPositionEvent = true;
             User32.ShowWindow(this.Handle, ShowWinCmd.SW_SHOW);
-            this.PreventStateEvent = false;
-            this.PreventPositionEvent = false;
+            this._PreventStateEvent = false;
+            this._PreventPositionEvent = false;
         }
 
-        public void Hide()
+        protected override void HideCore()
         {
-            ThrowIfDisposed();
-
-            if (!this.IsVisible)
+            if (!this.IsVisibleCore)
                 return;
 
             User32.ShowWindow(this.Handle, ShowWinCmd.SW_HIDE);
         }
 
-        public void Drag()
+        protected override void DragCore()
         {
-            ThrowIfDisposed();
-            this.WV.WVUIContext?.Post(x =>
+            WVUIContext?.Post(x =>
             {
                 User32.ReleaseCapture();
                 _ = User32.SendMessage(this.Handle, (uint)WinMsg.WM_NCLBUTTONDOWN, (int)WM_NCHITTEST.HTCAPTION, 0);
@@ -372,80 +301,72 @@ namespace WV.Win.Imp
 
         #region RESIZE
 
-        public void ResizeTopLeft()
+        protected override void ResizeTopLeftCore()
         {
-            ThrowIfDisposed();
-            this.WV.WVUIContext?.Post(x =>
+            WVUIContext?.Post(x =>
             {
                 User32.ReleaseCapture();
                 _ = User32.SendMessage(this.Handle, (uint)WinMsg.WM_NCLBUTTONDOWN, (int)WM_NCHITTEST.HTTOPLEFT, 0);
             }, null);
         }
 
-        public void ResizeTopRight()
+        protected override void ResizeTopRightCore()
         {
-            ThrowIfDisposed();
-            WV.WVUIContext?.Post(x =>
+            WVUIContext?.Post(x =>
             {
                 User32.ReleaseCapture();
                 _ = User32.SendMessage(this.Handle, (uint)WinMsg.WM_NCLBUTTONDOWN, (int)WM_NCHITTEST.HTTOPRIGHT, 0);
             }, null);
         }
 
-        public void ResizeBottomLeft()
+        protected override void ResizeBottomLeftCore()
         {
-            ThrowIfDisposed();
-            WV.WVUIContext?.Post(x =>
+            WVUIContext?.Post(x =>
             {
                 User32.ReleaseCapture();
                 _ = User32.SendMessage(this.Handle, (uint)WinMsg.WM_NCLBUTTONDOWN, (int)WM_NCHITTEST.HTBOTTOMLEFT, 0);
             }, null);
         }
 
-        public void ResizeBottomRight()
+        protected override void ResizeBottomRightCore()
         {
-            ThrowIfDisposed();
-            this.WV.WVUIContext?.Post(x =>
+            WVUIContext?.Post(x =>
             {
                 User32.ReleaseCapture();
                 _ = User32.SendMessage(this.Handle, (uint)WinMsg.WM_NCLBUTTONDOWN, (int)WM_NCHITTEST.HTBOTTOMRIGHT, 0);
             }, null);
         }
 
-        public void ResizeLeft()
+        protected override void ResizeLeftCore()
         {
-            ThrowIfDisposed();
-            this.WV.WVUIContext?.Post(x =>
+            WVUIContext?.Post(x =>
             {
                 User32.ReleaseCapture();
                 _ = User32.SendMessage(this.Handle, (uint)WinMsg.WM_NCLBUTTONDOWN, (int)WM_NCHITTEST.HTLEFT, 0);
             }, null);
         }
 
-        public void ResizeRight()
+        protected override void ResizeRightCore()
         {
-            ThrowIfDisposed();
-            this.WV.WVUIContext?.Post(x =>
+            WVUIContext?.Post(x =>
             {
                 User32.ReleaseCapture();
                 _ = User32.SendMessage(this.Handle, (uint)WinMsg.WM_NCLBUTTONDOWN, (int)WM_NCHITTEST.HTRIGHT, 0);
             }, null);
         }
 
-        public void ResizeTop()
+        protected override void ResizeTopCore()
         {
-            ThrowIfDisposed();
-            this.WV.WVUIContext?.Post(x =>
+            WVUIContext?.Post(x =>
             {
                 User32.ReleaseCapture();
                 _ = User32.SendMessage(this.Handle, (uint)WinMsg.WM_NCLBUTTONDOWN, (int)WM_NCHITTEST.HTTOP, 0);
             }, null);
         }
 
-        public void ResizeBottom()
+        protected override void ResizeBottomCore()
         {
-            ThrowIfDisposed();
-            this.WV.WVUIContext?.Post(x =>
+            WVUIContext?.Post(x =>
             {
                 User32.ReleaseCapture();
                 _ = User32.SendMessage(this.Handle, (uint)WinMsg.WM_NCLBUTTONDOWN, (int)WM_NCHITTEST.HTBOTTOM, 0);
@@ -454,33 +375,31 @@ namespace WV.Win.Imp
 
         #endregion
 
-        public void Minimize()
+        protected override void MinimizeCore()
         {
             this.ChangeState(WindowState.Minimized);
         }
 
-        public void Normalize()
+        protected override void NormalizeCore()
         {
             this.ChangeState(WindowState.Normalized);
         }
 
-        public void Maximize()
+        protected override void MaximizeCore()
         {
-            if (this.State == WindowState.Minimized)
-                this.PreventPositionEvent = true;
+            if (this.StateCore == WindowState.Minimized)
+                this._PreventPositionEvent = true;
 
             this.ChangeState(WindowState.Maximized);
-            this.PreventPositionEvent = false;
+            this._PreventPositionEvent = false;
         }
 
-        public void Restore()
+        protected override void RestoreCore()
         {
-            ThrowIfDisposed();
-
-            switch (this.State)
+            switch (this.StateCore)
             {
                 case WindowState.Minimized:
-                    if (this.LastState == WindowState.Normalized)
+                    if (this._LastState == WindowState.Normalized)
                         User32.ShowWindow(this.Handle, ShowWinCmd.SW_RESTORE);
                     else
                         this.Maximize();
@@ -500,138 +419,118 @@ namespace WV.Win.Imp
 
         //=======================================//
 
-        #region Protected Methods
-
-        protected override void ThrowIfDisposed()
-        {
-            base.ThrowIfDisposed();
-            Plugin.ThrowIfDisposed(this.WV);
-        }
-
-        #endregion
-
-        //=======================================//
-
         #region Internal Methods
 
-        internal void FireStateChangedEvent(WindowState value, string text)
+        protected override void FireStateChangedEvent(WindowState value, string text)
         {
             if (this.Disposed)
                 return;
 
-            if (this.PreventStateEvent)
+            if (this._PreventStateEvent)
                 return;
 
-            this.StateChanged?.Invoke(this.WV, value, text);
+            base.FireStateChangedEvent(value, text);
         }
 
-        internal void FireCloseEvent()
-        {
-            if(this.Disposed)
-                return;
-
-            this.Closing?.Invoke(this.WV);
-        }
-
-        internal void FirePositionChangedEvent(int x, int y)
+        protected override void FirePositionChangedEvent(int x, int y)
         {
             if (this.Disposed)
                 return;
 
-            if (this.PreventPositionEvent)
+            if (this._PreventPositionEvent)
                 return;
 
-            this.PositionChanged?.Invoke(this.WV, x, y);
+            base.FirePositionChangedEvent(x, y);
         }
 
-        internal void FireActivatedEvent(bool active)
+        protected override void FireActivatedEvent(bool active)
         {
             if (this.Disposed)
                 return;
 
-            if (this.PreventActivateEvent)
+            if (this._PreventActivateEvent)
                 return;
 
-            this.Activated?.Invoke(this.WV, active);
+            base.FireActivatedEvent(active);
         }
 
-        internal void FireEnabledEvent(bool enabled)
+        protected override void FireEnabledEvent(bool enabled)
         {
             if (this.Disposed)
                 return;
 
-            if (this.PreventEnableEvent)
+            if (this._PreventEnableEvent)
                 return;
 
-            this.EnabledEvent?.Invoke(this.WV, enabled);
+            base.FireEnabledEvent(enabled);
         }
 
-        internal void FireVisibleEvent(bool visible)
+        protected override void FireVisibleEvent(bool visible)
         {
             if (this.Disposed)
                 return;
 
-            this.IsVisible = visible;
+            _IsVisible = visible;
 
-            if (this.PreventVisibleEvent)
+            if (this._PreventVisibleEvent)
                 return;
 
-            this.Visible?.Invoke(this.WV, visible);
+            base.FireVisibleEvent(visible);
         }
 
-        internal void FireSizeChangedEvent(int width, int heigth)
+        protected override void FireSizeChangedEvent(int width, int heigth)
         {
             if (this.Disposed)
                 return;
 
-            if (this.PreventSizeEvent)
+            if (this._PreventSizeEvent)
                 return;
 
-            this.SizeChanged?.Invoke(this.WV, width, heigth);
-        }
-
-        internal void ClearAllEvents()
-        {
-            // Quita los eventos registrados con AddEventListener desde JS
-            this.ClearListeners();
-            this.ClearEvents();
+            base.FireSizeChangedEvent(width, heigth);
         }
 
         internal void ToDefault()
         {
-            if (!this.IsVisible)
+            this.ClearListeners();
+            this.ClearEvents();
+
+            if (!this.IsVisibleCore)
             {
-                this.PreventVisibleEvent = true;
-                this.ShowBehind();
-                this.PreventVisibleEvent = false;
+                this._PreventVisibleEvent = true;
+                this.ShowBehindCore();
+                this._PreventVisibleEvent = false;
             }
 
-            this.PreventStateEvent = true;
-            this.Normalize();
-            this.PreventStateEvent = false;
+            this._PreventStateEvent = true;
+            this.NormalizeCore();
+            this._PreventStateEvent = false;
 
-            this.PreventVisibleEvent = true;
-            this.Hide();
-            this.PreventVisibleEvent = false;
+            this._PreventVisibleEvent = true;
+            this.HideCore();
+            this._PreventVisibleEvent = false;
 
-            this.Title = string.Empty;
-            this.TopMost = false;
-            this.Enabled = true;
-            this.PreventClose = false;
-            this.ClickThrough = false;
+            var config = _Config;
 
-            Rect rect = this.InternalRect;
-            rect.X = 0;
-            rect.Y = 0;
-            rect.MinWidth = AppManager.MinWindowWidth;
-            rect.MinHeight = AppManager.MinWindowHeight;
-            rect.Width = rect.MinWidth;
-            rect.Height = rect.MinHeight;
-            rect.MaxWidth = AppManager.MaxWindowWidth;
-            rect.MaxHeight = AppManager.MaxWindowHeight;
+            TitleCore = config.Title;
+            TopMostCore = false;
+            EnabledCore = true;
+            PreventCloseCore = false;
+            ClickThroughCore = false;
+
+            InternalRect.ToDefault();
+
+            if(config.CenterScreen)
+                ToCenterCore();
         }
 
         #endregion
+
+        protected override void DisposeCore(bool disposing)
+        {
+            WVUIContext = null;
+            Utils32.WinInstances.Remove(this.Handle);
+            CloseCore();
+        }
 
         //=======================================//
 
@@ -639,21 +538,19 @@ namespace WV.Win.Imp
 
         private void ChangeState(WindowState value)
         {
-            ThrowIfDisposed();
-
             // La ventana DEBE estar visible
-            if (!this.IsVisible)
+            if (!this.IsVisibleCore)
                 return;
 
             // Evitar hacer dos cambios de State al mismo tiempo
-            if (this.StateChangeInternal)
+            if (this._StateChange)
                 return;
 
             // Tiene que ser un State distinto
-            if (this.State == value)
+            if (this.StateCore == value)
                 return;
 
-            this.StateChangeInternal = true;
+            this._StateChange = true;
 
             ShowWinCmd action = ShowWinCmd.SW_NORMAL;
 
@@ -672,14 +569,14 @@ namespace WV.Win.Imp
 
             try
             {
-                this.LastState = this.State;
+                this._LastState = this.State;
                 this._State = value;
                 User32.ShowWindow(this.Handle, action);
                 FireStateChangedEvent(value, value.ToString());
             }
             finally
             {
-                this.StateChangeInternal = false;
+                this._StateChange = false;
             }
         }
 
@@ -691,8 +588,10 @@ namespace WV.Win.Imp
 
         internal IntPtr WndProc(IntPtr hWnd, uint uMsg, IntPtr wParam, IntPtr lParam)
         {
-            bool handled = false;
-            this.Raw?.Invoke(this.WV, new object[] { hWnd, uMsg, wParam, lParam }, ref handled);
+            if (WebView.Disposed)
+                return IntPtr.Zero;
+
+            bool handled = FireRawEvent(hWnd, uMsg, wParam, lParam);
 
             if(handled)
                 return IntPtr.Zero;
@@ -701,7 +600,7 @@ namespace WV.Win.Imp
             {
                 case WinMsg.WM_CLOSE:
                     //Si se evita cerrar la ventana se dispara el evento OnClose
-                    if (this.PreventClose)
+                    if (this.PreventCloseCore)
                         this.FireCloseEvent();
                     else
                         User32.DestroyWindow(hWnd);
@@ -712,7 +611,7 @@ namespace WV.Win.Imp
                     this.WV.Dispose();
 
                     // Es el WebView original, se cierra todo
-                    if (this.WV.IsMain)
+                    if (_IsMain)
                         User32.PostQuitMessage(0);
 
                     break;
@@ -769,7 +668,7 @@ namespace WV.Win.Imp
                 default:
 
                     if (uMsg == UIThreadSyncCtx.WM_SYNCHRONIZATIONCONTEXT_WORK_AVAILABLE)
-                        this.WV.WVUIContext?.RunAvailableWorkOnCurrentThread();
+                        WVUIContext?.RunAvailableWorkOnCurrentThread();
 
                     break;
             }
@@ -782,11 +681,13 @@ namespace WV.Win.Imp
             RECT workArea = Utils32.GetWorkAreaByPosition(hWnd);
             MINMAXINFO mmi = Marshal.PtrToStructure<MINMAXINFO>(lParam);
 
-            int MinWidth = this.Rect.MinWidth;
-            int MinHeight = this.Rect.MinHeight;
+            var Rect = _Rect!;
 
-            int MaxWidth = this.Rect.MaxWidth;
-            int MaxHeight = this.Rect.MaxHeight;
+            int MinWidth = Rect.MinWidth;
+            int MinHeight = Rect.MinHeight;
+
+            int MaxWidth = Rect.MaxWidth;
+            int MaxHeight = Rect.MaxHeight;
 
             int Width = (workArea.Width > MaxWidth ? MaxWidth : workArea.Width);
             int Height = (workArea.Height > MaxHeight ? MaxHeight : workArea.Height - 1); // Se quita 1 pixel, asi se "soluciona" error al maximizar ventana, que se desborda
@@ -809,13 +710,13 @@ namespace WV.Win.Imp
 
         private IntPtr HandleSize(IntPtr hWnd, uint uMsg, IntPtr wParam, IntPtr lParam)
         {
-            CoreWebView2Controller? coreWV = this.WV.WVController;
+            CoreWebView2Controller? coreWV = this.WV.InternalBrowser.WVController;
 
             if (coreWV == null)
                 return User32.DefWindowProcW(hWnd, uMsg, wParam, lParam);
 
             // Si es un cambio de State controlado, se evita utilizar el Helpers
-            WindowState currentState = this.StateChangeInternal ? this.State : Helpers.GetCurrentState(hWnd);
+            WindowState currentState = this._StateChange ? this.State : Utils32.GetCurrentState(hWnd);
 
             // Actualizar el State, cuando el usuario iteracciona con la ventana (cambiar State o tamaño ventana NO controlados)
             this.UpdateStateFromSystem(currentState);
@@ -848,7 +749,7 @@ namespace WV.Win.Imp
         private IntPtr HandleMove(IntPtr hWnd, uint uMsg, IntPtr wParam, IntPtr lParam)
         {
             // La ventana esta Minimizada, cualquier movimiento estando minimizado no es valido
-            if (this.State == WindowState.Minimized)
+            if (this.StateCore == WindowState.Minimized)
                 return User32.DefWindowProcW(hWnd, uMsg, wParam, lParam);
 
             int posX = Utils32.GetLowWord(lParam);
@@ -866,17 +767,17 @@ namespace WV.Win.Imp
         internal void UpdateStateFromSystem(WindowState currentState)
         {
             // Es un cambio de State controlado, no hacer nada
-            if (this.StateChangeInternal)
+            if (this._StateChange)
                 return;
 
             // La ventana es invisible, es un falso cambio de estado,
             // provocado por redimensionar la ventana mediante HWnd o Rect
-            if (!this.IsVisible)
+            if (!this.IsVisibleCore)
                 return;
 
             //State currentState = this.State;
 
-            if (this.State == currentState)
+            if (this.StateCore == currentState)
                 return;
 
             this._State = currentState;

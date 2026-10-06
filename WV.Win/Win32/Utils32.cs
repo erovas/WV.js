@@ -1,17 +1,62 @@
-﻿using WV.Win.Win32.Enums;
+﻿using System.Runtime.InteropServices;
+using WV.Enums;
+using WV.Win.Imp;
+using WV.Win.Win32.Enums;
 using WV.Win.Win32.Structs;
-using System.Runtime.InteropServices;
 
 namespace WV.Win.Win32
 {
     internal static class Utils32
     {
+        /// <summary>
+        /// Instancias de la ventana principal contenedora
+        /// </summary>
+        public static readonly Dictionary<long, WebView> WinInstances = new();
+
+        #region Constants
+
         public static nint HInstance { get; } = User32.GetModuleHandle(null);
-        public static int IDI_APPLICATION { get; } = 32512;
-        public static int IDC_ARROW { get; } = 32512;
-        public static int CW_USEDEFAULT { get; } = unchecked((int)0x80000000);
+        public const int IDI_APPLICATION = 32512;
+        public const int IDC_ARROW = 32512;
+        public const int CW_USEDEFAULT = unchecked((int)0x80000000);
+        public const uint TransparencyColor = 0x0000FF;
+        private const uint MONITOR_DEFAULTTONEAREST = 0x00000002;
 
+        #endregion
 
+        #region WndProccess avoid GC
+
+        // Delegado para el procedimiento de ventana
+        public delegate nint WndProcDelegate(nint hWnd, uint msg, IntPtr wParam, IntPtr lParam);
+
+        /// <summary>
+        /// Mantener una referencia al delegado para evitar que el GC lo elimine
+        /// </summary>
+        public static WndProcDelegate WinProcDelegate { get; } = WndProc;
+
+        #endregion
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="hWnd"></param>
+        /// <param name="msg"></param>
+        /// <param name="wParam"></param>
+        /// <param name="lParam"></param>
+        /// <returns></returns>
+        public static nint WndProc(nint hWnd, uint msg, IntPtr wParam, nint lParam)
+        {
+            if (Utils32.WinInstances.ContainsKey(hWnd))
+                return Utils32.WinInstances[hWnd].InternalWindow.WndProc(hWnd, msg, wParam, lParam);
+
+            return User32.DefWindowProcW(hWnd, msg, wParam, lParam);
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="hWnd"></param>
+        /// <returns></returns>
         public static RECT GetWorkAreaByPosition(IntPtr hWnd)
         {
             RECT workArea = new RECT();
@@ -40,6 +85,11 @@ namespace WV.Win.Win32
             return workArea;
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="hWnd"></param>
+        /// <returns></returns>
         public static RECT GetWorkArea(IntPtr hWnd)
         {
             IntPtr hMonitor = User32.MonitorFromWindow(hWnd, 2);  // 2 = MONITOR_DEFAULTTONEAREST 
@@ -59,12 +109,24 @@ namespace WV.Win.Win32
             return workArea;
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="hWnd"></param>
+        /// <param name="style"></param>
+        /// <returns></returns>
         public static bool HasWindowStyle(IntPtr hWnd, WinStyles style)
         {
             int currentStyle = User32.GetWindowLong(hWnd, (int)GetWinLong.GWL_STYLE);
             return (currentStyle & (int)style) != 0;
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="hWnd"></param>
+        /// <param name="style"></param>
+        /// <param name="add"></param>
         public static void SetWinStyle(IntPtr hWnd, WinStyles style, bool add)
         {
             // Obtener estilos actuales
@@ -111,7 +173,12 @@ namespace WV.Win.Win32
             return y;
         }
 
-
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="hwnd"></param>
+        /// <param name="topMost"></param>
+        /// <returns></returns>
         public static bool WindowTopMost(IntPtr hwnd, bool topMost)
         {
             return User32.SetWindowPos(
@@ -121,6 +188,60 @@ namespace WV.Win.Win32
                 0, 0, //Width, Height, 
                 (uint)(SetWinPos.SWP_NOMOVE | SetWinPos.SWP_NOSIZE | SetWinPos.SWP_NOACTIVATE)
             );
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="wv"></param>
+        /// <returns></returns>
+        public static RECT GetRECT(WebView wv)
+        {
+            Window win = wv.InternalWindow;
+            Browser bro = wv.InternalBrowser;
+
+            // La ventana está actualmente Minimizada
+            if (win.State == WindowState.Minimized)
+            {
+                WINDOWPLACEMENT placement = new WINDOWPLACEMENT();
+                placement.length = Marshal.SizeOf(placement);
+                User32.GetWindowPlacement(win.Handle, ref placement);
+
+                // Estaba Normalizada antes de ser minimizada
+                if (win._LastState == WindowState.Normalized)
+                    return placement.rcNormalPosition;
+
+                // Encontrar el monitor asociado a ptMaxPosition
+                IntPtr hMonitor = User32.MonitorFromWindow(win.Handle, MONITOR_DEFAULTTONEAREST);
+                MONITORINFO monitorInfo = new MONITORINFO();
+                monitorInfo.cbSize = Marshal.SizeOf(monitorInfo);
+                User32.GetMonitorInfo(hMonitor, ref monitorInfo);
+                return monitorInfo.rcWork;
+            }
+
+            // La ventana esta Normalizada o Maximizada
+            User32.GetWindowRect(win.Handle, out RECT rect);
+
+            if (bro.WVController != null)
+            {
+                rect.Right = rect.X + bro.WVController.Bounds.Width;
+                rect.Bottom = rect.Y + bro.WVController.Bounds.Height;
+            }
+
+            return rect;
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="wv"></param>
+        /// <param name="X"></param>
+        /// <param name="Y"></param>
+        /// <param name="Width"></param>
+        /// <param name="Height"></param>
+        public static void SetRECT(WebView wv, int X, int Y, int Width, int Height)
+        {
+            User32.MoveWindow(wv.InternalWindow.Handle, X, Y, Width, Height, true);
         }
 
         private static bool _MsgLoopRunned = false;
@@ -138,57 +259,83 @@ namespace WV.Win.Win32
             }
         }
 
+        public static WindowState GetCurrentState(IntPtr hwnd)
+        {
+            var placement = new WINDOWPLACEMENT();
+            placement.length = Marshal.SizeOf(placement);
+            User32.GetWindowPlacement(hwnd, ref placement);
 
+            WindowState newState = WindowState.Normalized;
 
+            switch (placement.showCmd)
+            {
+                //case 1: // SW_SHOWNORMAL
+                //    newState = State.Normal;
+                //    break;
+                case 2: // SW_SHOWMINIMIZED
+                    newState = WindowState.Minimized;
+                    break;
+                case 3: // SW_SHOWMAXIMIZED
+                    newState = WindowState.Maximized;
+                    break;
+            }
 
+            return newState;
+        }
 
+        public static IntPtr CreateMainWindows(WebView wv, string name)
+        {
+            string UID = wv.UID;
+            IntPtr hwnd = (wv.InternalIsMain ? IntPtr.Zero : wv.InternalWebView.InternalWindow.Handle);
 
+            // Registrar clase de ventana principal
+            WNDCLASSEX MainWinClass = new WNDCLASSEX
+            {
+                cbSize = (uint)Marshal.SizeOf(typeof(WNDCLASSEX)),
+                style = 0,
+                lpfnWndProc = Marshal.GetFunctionPointerForDelegate(Utils32.WinProcDelegate),
+                cbClsExtra = 0,
+                cbWndExtra = 0,
+                hInstance = Utils32.HInstance,
+                hIcon = User32.LoadIcon(IntPtr.Zero, Utils32.IDI_APPLICATION),
+                hCursor = User32.LoadCursor(IntPtr.Zero, Utils32.IDC_ARROW),
+                hbrBackground = User32.CreateSolidBrush(Utils32.TransparencyColor),
+                lpszMenuName = null,
+                lpszClassName = UID,  // Debe ser unico para cada ventana
+                hIconSm = User32.LoadIcon(IntPtr.Zero, Utils32.IDI_APPLICATION)
+            };
 
+            if (User32.RegisterClassEx(ref MainWinClass) == 0)
+                throw new Exception("!Error al registrar la clase de la ventana principal! Código de error: " + Marshal.GetLastWin32Error());
 
+            // Crear la ventana utilizando CreateWindowExW (versión Unicode explícita)
+            IntPtr MainhWnd = User32.CreateWindowExW(
+                (int)WinStylesEx.WS_EX_LAYERED, // Habilita ventana con capas para transparencia
+                UID,   // Nombre de la clase registrada, debe ser unica
+                name, // Título de la ventana, por defecto string vacio
+                (uint)(WinStyles.WS_THICKFRAME | WinStyles.WS_SYSMENU | WinStyles.WS_MINIMIZEBOX | WinStyles.WS_MAXIMIZEBOX),
+                //(uint)(WinStyles.WS_CAPTION | WinStyles.WS_THICKFRAME | WinStyles.WS_MINIMIZEBOX | WinStyles.WS_MAXIMIZEBOX),
+                Utils32.CW_USEDEFAULT,
+                Utils32.CW_USEDEFAULT,
+                App.Window.Rect.MinWidth,
+                App.Window.Rect.MinHeight,
+                hwnd,    // hWnd de ventana padre 
+                IntPtr.Zero,
+                Utils32.HInstance,
+                IntPtr.Zero
+            );
 
+            if (MainhWnd == IntPtr.Zero)
+                throw new Exception("!!!Error al crear la ventana. Código de error: " + Marshal.GetLastWin32Error());
 
+            // Guardando instancia de WebView en diccionario
+            Utils32.WinInstances.Add(MainhWnd, wv);
 
+            // Establecer el color clave para la transparencia
+            User32.SetLayeredWindowAttributes(MainhWnd, Utils32.TransparencyColor, 0, DWFlags.LWA_COLORKEY);
 
-
-
-
-
-
-
-
-        //public static bool WindowIsOccluded(IntPtr hwnd)
-        //{
-        //    User32.GetCursorPos(out POINT p);
-        //    const uint GW_HWNDNEXT = 2;
-        //    for (IntPtr h = User32.GetTopWindow(IntPtr.Zero); h != IntPtr.Zero; h = User32.GetWindow(h, GW_HWNDNEXT))
-        //    {
-        //        if (!User32.IsWindowVisible(h))
-        //            continue;
-
-        //        if (!User32.GetWindowRect(h, out RECT r))
-        //            continue;
-
-        //        if (p.x >= r.Left && p.x <= r.Right && p.y >= r.Top && p.y <= r.Bottom)
-        //        {
-        //            if (h == hwnd)
-        //                return false;
-
-        //            return true;
-        //        }
-        //    }
-        //    return false;
-        //}
-
-        //public static bool IsPointInsideWindow(IntPtr hwnd)
-        //{
-        //    if (!User32.GetCursorPos(out POINT p))
-        //        return false;
-
-        //    if (!User32.GetWindowRect(hwnd, out RECT r))
-        //        return false;
-
-        //    return p.x >= r.Left && p.x <= r.Right && p.y >= r.Top && p.y <= r.Bottom;
-        //}
+            return MainhWnd;
+        }
 
     }
 }

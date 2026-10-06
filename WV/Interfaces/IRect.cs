@@ -1,7 +1,9 @@
 ﻿namespace WV.Interfaces
 {
-    public interface IRect
+    public interface IRect : IDisposable
     {
+        #region Properties
+
         /// <summary>
         /// Window position in X.
         /// </summary>
@@ -33,14 +35,20 @@
         int MaxHeight { get; set; }
 
         /// <summary>
-        /// Minimun window width.
+        /// Minimun window width. Minimun value is 136.
         /// </summary>
         int MinWidth { get; set; }
 
         /// <summary>
-        /// Minimun window height.
+        /// Minimun window height. Minimun value is 39.
         /// </summary>
         int MinHeight { get; set; }
+
+        #endregion
+
+        //-------------------------------------------//
+
+        #region Methods
 
         /// <summary>
         /// Set size of window.
@@ -82,5 +90,8 @@
         /// </summary>
         /// <returns></returns>
         int[] GetPositionAndSize();
+
+        #endregion
+
     }
 }

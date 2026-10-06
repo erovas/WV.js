@@ -1,10 +1,11 @@
 ﻿using Microsoft.Web.WebView2.Core;
 using System.Reflection;
+using WV.Core.Browsering;
 using WV.Interfaces;
 
 namespace WV.Win.Imp
 {
-    public class ContextMenu : IContextMenu
+    public class ContextMenu : ContextMenuCore, IContextMenu
     {
         private static readonly Dictionary<string, int> NativeItemCodes = new Dictionary<string, int>
         {
@@ -46,240 +47,226 @@ namespace WV.Win.Imp
             public bool Visible = true;
         }
 
-        #region Private fields
+        //===============================================//
 
-        private bool enable;
-        private List<IContextMenuItem> children;
+        //===============================================//
+
+        #region Fields
+
+        private Dictionary<string, IContextMenuItem>? _itemInstances;
+        private Dictionary<string, NatItem>? _dicPropNativeItems;
 
         #endregion
 
-        private WebView WV { get; }
-        private Dictionary<string, NatItem> DicPropNativeItems { get; } = new();
-        private List<IContextMenuItem> InternalInstances { get; } = new();
+        private Dictionary<string, NatItem> DicPropNativeItems => _dicPropNativeItems!;
+        private Dictionary<string, IContextMenuItem> _ItemInstances => _itemInstances!;
+        private List<IContextMenuItem> _Children => _children!;
+        private string Directory => ((WebView)WebView).InternalBrowser.Directory;
 
-        public ContextMenu(WebView wv) 
+        public ContextMenu(IPluginContext context, string directory) : base(context)
         {
-            this.enable = true;
-            this.children = new List<IContextMenuItem>();
-            this.WV = wv;
+        }
+
+        protected override void Initialize(IPluginContext context)
+        {
+            _itemInstances = new Dictionary<string, IContextMenuItem>();
+            _dicPropNativeItems = new Dictionary<string, NatItem>();
 
             // Obtener nombres de PROPS Native Items
             PropertyInfo[] props = this.GetType().GetProperties();
-            foreach (PropertyInfo pi in props) 
+            foreach (PropertyInfo pi in props)
             {
                 string name = pi.Name.Replace("Item", "");
-                if(NativeItemCodes.TryGetValue(name, out int value))
-                    this.DicPropNativeItems[pi.Name] = new NatItem { Cod = value };
-            }
-
-        }
-
-        #region PROPS
-
-        public bool Enable 
-        { 
-            get
-            {
-                ThrowDispose();
-                return enable;
-            }
-            set
-            {
-                ThrowDispose();
-                enable = value;
+                if (NativeItemCodes.TryGetValue(name, out int value))
+                    _dicPropNativeItems[pi.Name] = new NatItem { Cod = value };
             }
         }
 
-        public IContextMenuItem[] Children
-        {
-            get
-            {
-                ThrowDispose();
-                return this.children.ToArray();
-            }
-        }
+        #region Properties
+
+        protected override bool EnableCore { get; set; } = true;
 
         #endregion
 
-        #region PROPS Native Items
+        #region Properties Native Items
 
-        public bool ShowNativeItems { get; set; } = true;
+        protected override bool ShowNativeItemsCore { get; set; } = true;
 
-        public bool EmojiItem 
+        protected override bool EmojiItemCore 
         { 
             get => this.DicPropNativeItems[nameof(EmojiItem)].Visible; 
             set => this.DicPropNativeItems[nameof(EmojiItem)].Visible = value;
         }
 
-        public bool UndoItem
+        protected override bool UndoItemCore
         {
             get => this.DicPropNativeItems[nameof(UndoItem)].Visible;
             set => this.DicPropNativeItems[nameof(UndoItem)].Visible = value;
         }
 
-        public bool RedoItem
+        protected override bool RedoItemCore
         {
             get => this.DicPropNativeItems[nameof(RedoItem)].Visible;
             set => this.DicPropNativeItems[nameof(RedoItem)].Visible = value;
         }
 
-        public bool CutItem
+        protected override bool CutItemCore
         {
             get => this.DicPropNativeItems[nameof(CutItem)].Visible;
             set => this.DicPropNativeItems[nameof(CutItem)].Visible = value;
         }
 
-        public bool CopyItem
+        protected override bool CopyItemCore
         {
             get => this.DicPropNativeItems[nameof(CopyItem)].Visible;
             set => this.DicPropNativeItems[nameof(CopyItem)].Visible = value;
         }
 
-        public bool PasteItem
+        protected override bool PasteItemCore
         {
             get => this.DicPropNativeItems[nameof(PasteItem)].Visible;
             set => this.DicPropNativeItems[nameof(PasteItem)].Visible = value;
         }
 
-        public bool PasteAndMatchStyleItem
+        protected override bool PasteAndMatchStyleItemCore
         {
             get => this.DicPropNativeItems[nameof(PasteAndMatchStyleItem)].Visible;
             set => this.DicPropNativeItems[nameof(PasteAndMatchStyleItem)].Visible = value;
         }
 
-        public bool SelectAllItem
+        protected override bool SelectAllItemCore
         {
             get => this.DicPropNativeItems[nameof(SelectAllItem)].Visible;
             set => this.DicPropNativeItems[nameof(SelectAllItem)].Visible = value;
         }
 
-        public bool WritingDirectionItem
+        protected override bool WritingDirectionItemCore
         {
             get => this.DicPropNativeItems[nameof(WritingDirectionItem)].Visible;
             set => this.DicPropNativeItems[nameof(WritingDirectionItem)].Visible = value;
         }
 
-        public bool ShareItem
+        protected override bool ShareItemCore
         {
             get => this.DicPropNativeItems[nameof(ShareItem)].Visible;
             set => this.DicPropNativeItems[nameof(ShareItem)].Visible = value;
         }
 
-        public bool WebCaptureItem
+        protected override bool WebCaptureItemCore
         {
             get => this.DicPropNativeItems[nameof(WebCaptureItem)].Visible;
             set => this.DicPropNativeItems[nameof(WebCaptureItem)].Visible = value;
         }
 
-        public bool LoopItem
+        protected override bool LoopItemCore
         {
             get => this.DicPropNativeItems[nameof(LoopItem)].Visible;
             set => this.DicPropNativeItems[nameof(LoopItem)].Visible = value;
         }
 
-        public bool ShowAllControlsItem
+        protected override bool ShowAllControlsItemCore
         {
             get => this.DicPropNativeItems[nameof(ShowAllControlsItem)].Visible;
             set => this.DicPropNativeItems[nameof(ShowAllControlsItem)].Visible = value;
         }
 
-        public bool SaveMediaAsItem
+        protected override bool SaveMediaAsItemCore
         {
             get => this.DicPropNativeItems[nameof(SaveMediaAsItem)].Visible;
             set => this.DicPropNativeItems[nameof(SaveMediaAsItem)].Visible = value;
         }
 
-        public bool CopyLinkItem
+        protected override bool CopyLinkItemCore
         {
             get => this.DicPropNativeItems[nameof(CopyLinkItem)].Visible;
             set => this.DicPropNativeItems[nameof(CopyLinkItem)].Visible = value;
         }
 
-        public bool CopyLinkToHighlightItem
+        protected override bool CopyLinkToHighlightItemCore
         {
             get => this.DicPropNativeItems[nameof(CopyLinkToHighlightItem)].Visible;
             set => this.DicPropNativeItems[nameof(CopyLinkToHighlightItem)].Visible = value;
         }
 
-        public bool PrintItem
+        protected override bool PrintItemCore
         {
             get => this.DicPropNativeItems[nameof(PrintItem)].Visible;
             set => this.DicPropNativeItems[nameof(PrintItem)].Visible = value;
         }
 
-        public bool BackItem
+        protected override bool BackItemCore
         {
             get => this.DicPropNativeItems[nameof(BackItem)].Visible;
             set => this.DicPropNativeItems[nameof(BackItem)].Visible = value;
         }
 
-        public bool ForwardItem
+        protected override bool ForwardItemCore
         {
             get => this.DicPropNativeItems[nameof(ForwardItem)].Visible;
             set => this.DicPropNativeItems[nameof(ForwardItem)].Visible = value;
         }
 
-        public bool ReloadItem
+        protected override bool ReloadItemCore
         {
             get => this.DicPropNativeItems[nameof(ReloadItem)].Visible;
             set => this.DicPropNativeItems[nameof(ReloadItem)].Visible = value;
         }
 
-        public bool SaveAsItem
+        protected override bool SaveAsItemCore
         {
             get => this.DicPropNativeItems[nameof(SaveAsItem)].Visible;
             set => this.DicPropNativeItems[nameof(SaveAsItem)].Visible = value;
         }
 
-        public bool SaveImageAsItem
+        protected override bool SaveImageAsItemCore
         {
             get => this.DicPropNativeItems[nameof(SaveImageAsItem)].Visible;
             set => this.DicPropNativeItems[nameof(SaveImageAsItem)].Visible = value;
         }
 
-        public bool CopyImageItem
+        protected override bool CopyImageItemCore
         {
             get => this.DicPropNativeItems[nameof(CopyImageItem)].Visible;
             set => this.DicPropNativeItems[nameof(CopyImageItem)].Visible = value;
         }
 
-        public bool CopyImageLocationItem
+        protected override bool CopyImageLocationItemCore
         {
             get => this.DicPropNativeItems[nameof(CopyImageLocationItem)].Visible;
             set => this.DicPropNativeItems[nameof(CopyImageLocationItem)].Visible = value;
         }
 
-        public bool MagnifyImageItem
+        protected override bool MagnifyImageItemCore
         {
             get => this.DicPropNativeItems[nameof(MagnifyImageItem)].Visible;
             set => this.DicPropNativeItems[nameof(MagnifyImageItem)].Visible = value;
         }
 
-        public bool SaveFrameAsItem
+        protected override bool SaveFrameAsItemCore
         {
             get => this.DicPropNativeItems[nameof(SaveFrameAsItem)].Visible;
             set => this.DicPropNativeItems[nameof(SaveFrameAsItem)].Visible = value;
         }
 
-        public bool CopyVideoFrameItem
+        protected override bool CopyVideoFrameItemCore
         {
             get => this.DicPropNativeItems[nameof(CopyVideoFrameItem)].Visible;
             set => this.DicPropNativeItems[nameof(CopyVideoFrameItem)].Visible = value;
         }
 
-        public bool PictureInPictureItem
+        protected override bool PictureInPictureItemCore
         {
             get => this.DicPropNativeItems[nameof(PictureInPictureItem)].Visible;
             set => this.DicPropNativeItems[nameof(PictureInPictureItem)].Visible = value;
         }
 
-        public bool SaveLinkAsItem
+        protected override bool SaveLinkAsItemCore
         {
             get => this.DicPropNativeItems[nameof(SaveLinkAsItem)].Visible;
             set => this.DicPropNativeItems[nameof(SaveLinkAsItem)].Visible = value;
         }
 
-        public bool OpenLinkInNewWindowItem
+        protected override bool OpenLinkInNewWindowItemCore
         {
             get => this.DicPropNativeItems[nameof(OpenLinkInNewWindowItem)].Visible;
             set => this.DicPropNativeItems[nameof(OpenLinkInNewWindowItem)].Visible = value;
@@ -288,57 +275,67 @@ namespace WV.Win.Imp
 
         #endregion
 
-        #region METHODS
+        #region Methods
 
-        public IContextMenuItem CreateContextItem(string label, string kind, string? icon = null, object? callback = null)
+        protected override IContextMenuItem CreateContextItemCore(string label, string kind, string? icon = null, object? callback = null)
         {
-            ThrowDispose();
-            var item = new ContextMenuItem(this.WV, kind, label, icon ?? string.Empty){ Callback = callback };
-            this.InternalInstances.Add(item);
+            var ctx = CreateCTX();
+            var item = new ContextMenuItem(ctx, kind, label, icon ?? string.Empty, Directory){ Callback = callback };
+            this._ItemInstances.Add(item.UID, item);
             return item;
         }
 
-        public IContextMenuItem CreateContextItemSeparator()
+        protected override IContextMenuItem CreateContextItemSeparatorCore()
         {
-            ThrowDispose();
-            var item = new ContextMenuItem(this.WV, CoreWebView2ContextMenuItemKind.Separator.ToString(), string.Empty, string.Empty);
-            this.InternalInstances.Add(item);
+            var ctx = CreateCTX();
+            var item = new ContextMenuItem(ctx, CoreWebView2ContextMenuItemKind.Separator.ToString(), string.Empty, string.Empty, Directory);
+            this._ItemInstances.Add(item.UID, item);
             return item;
         }
 
-        public void AddItem(IContextMenuItem item)
+        protected override void AddItemCore(IContextMenuItem item)
         {
-            ThrowDispose();
             this.AllowInsertItem(item);
-            this.children.Add(item);
+            this._Children.Add(item);
         }
 
-        public void InsertItem(int index, IContextMenuItem item)
+        protected override void InsertItemCore(int index, IContextMenuItem item)
         {
-            ThrowDispose();
             this.AllowInsertItem(item);
-            this.children.Insert(index, item);
+            this._Children.Insert(index, item);
         }
 
-        public bool RemoveItem(IContextMenuItem item)
+        protected override bool RemoveItemCore(IContextMenuItem item)
         {
-            ThrowDispose();
-            return this.children.Remove(item);
+            return this._Children.Remove(item);
         }
 
-        public void RemoveItemAt(int index)
+        protected override void RemoveItemAtCore(int index)
         {
-            ThrowDispose();
-            this.children.RemoveAt(index);
+            this._Children.RemoveAt(index);
         }
 
-        public void Clear()
-        {
-            ThrowDispose();
-            this.children.Clear();
+        protected override void ClearCore()
+        {            
+            this._Children.Clear();
         }
 
         #endregion
+
+        protected override void DisposeCore(bool disposing)
+        {
+            if (!disposing)
+                return;
+
+            _dicPropNativeItems?.Clear();
+            _dicPropNativeItems = null;
+
+            foreach (var item in this._itemInstances!.Values)
+                item.Dispose();
+
+            _itemInstances.Clear();
+            _itemInstances = null;
+        }
 
         #region HELPERS
 
@@ -347,13 +344,13 @@ namespace WV.Win.Imp
             if (item.Parent != null)
                 throw new Exception("This item belongs to a submenu");
 
-            if (this.children.Contains(item))
+            if (this._Children.Contains(item))
                 throw new Exception("This item already exists");
         }
 
         internal void ContextMenuHandler(CoreWebView2 coreWV2, CoreWebView2ContextMenuRequestedEventArgs e)
         {
-            if (!this.Enable)
+            if (!this.EnableCore)
             {
                 e.MenuItems.Clear();
                 e.Handled = true;
@@ -367,7 +364,7 @@ namespace WV.Win.Imp
             e.MenuItems.Clear();
 
             // Si se quiere mostrar los items nativos
-            if (this.ShowNativeItems)
+            if (this.ShowNativeItemsCore)
             {
                 // Quitar todos los separadores del menu original
                 menuItems.RemoveAll(item => item.CommandId == -1);
@@ -382,33 +379,38 @@ namespace WV.Win.Imp
             }
                 
             // Inyectar Custom Items
-            foreach (var item in this.children)
+            foreach (var item in this._Children)
                 if(item.Visible)
-                    e.MenuItems.Add(((ContextMenuItem)item).Item);
-        }
-
-        internal void ClearEvents()
-        {
-            this.ToDefault();
+                    e.MenuItems.Add(((ContextMenuItem)item)._Item);
         }
 
         internal void ToDefault()
         {
+            ClearListeners();
+            ClearEvents();
+
             foreach (var item in this.DicPropNativeItems)
                 item.Value.Visible = true;
 
-            this.children.Clear();
+            this._Children.Clear();
             
-            foreach (var item in this.InternalInstances)
+            foreach (var item in this._ItemInstances.Values)
                 item.Dispose();
 
-            this.InternalInstances.Clear();
+            this._ItemInstances.Clear();
         }
 
-        private void ThrowDispose()
+        private IPluginContext CreateCTX()
         {
-            Plugin.ThrowIfDisposed(this.WV);
+            return Utils.CreateContext(WebView, Logger, nameof(ContextMenuItem), Logger.Source, OnItemDispose);
         }
+
+        private void OnItemDispose(string uid)
+        {
+            this._ItemInstances.Remove(uid);
+        }
+
+
 
         #endregion
 

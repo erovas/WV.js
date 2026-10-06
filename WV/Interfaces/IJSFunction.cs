@@ -17,7 +17,7 @@
                 Type itype = typeof(IJSFunction);
                 List<Type> types = AppDomain.CurrentDomain.GetAssemblies()
                                     .SelectMany(s => s.GetTypes())
-                                    .Where(p => itype.IsAssignableFrom(p) && p != itype).ToList();
+                                    .Where(p => itype.IsAssignableFrom(p) && p != itype && !p.IsAbstract).ToList();
 
                 _type = types.FirstOrDefault();
             }

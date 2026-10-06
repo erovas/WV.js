@@ -1,316 +1,255 @@
 ﻿using Microsoft.Web.WebView2.Core;
+using WV.Core.Browsering;
 using WV.Interfaces;
 
 namespace WV.Win.Imp
 {
-    public class ContextMenuItem : IContextMenuItem
+    public class ContextMenuItem : ContextMenuItemCore
     {
-        #region Private Fields
+        #region Fields
 
-        private string label;
-        private CoreWebView2ContextMenuItemKind kind;
-        private string icon;
-        private IContextMenuItem? parent;
-        private List<IContextMenuItem> children;
-        //private bool checked 
-        //private bool enabled;
-        private bool visible;
-        private IJSFunction? callback;
+        private string _label = string.Empty;
+        private CoreWebView2ContextMenuItemKind _kind;
+        private string _icon = string.Empty;
+        private bool _visible;
+        private IJSFunction? _callback;
+        internal CoreWebView2ContextMenuItem? _item;
+        private Stream? _stream;
 
         #endregion
 
-        internal CoreWebView2ContextMenuItem Item { get; set; }
-        private Stream? stream { get; set; }
-        private WebView WV { get; }
+        internal CoreWebView2ContextMenuItem _Item => this._item!;
 
-        internal ContextMenuItem(WebView wv, string kind, string label, string icon)
+        private string Directory => ((WebView)WebView).InternalBrowser.Directory;
+
+        internal ContextMenuItem(IPluginContext context, string kind, string label, string icon, string directory) : base(context, kind, label, icon)
         {
-            this.label = string.Empty;
-            this.icon = string.Empty;
-            this.visible = true;
-            this.children = new List<IContextMenuItem>();
-            this.WV = wv;
-
-            this.kind = GetKind(kind);
-            this.label = GetLabel(label);
-            this.icon = icon;
-            this.stream = GetStream(icon);
-            CreateItem();
         }
 
-        #region PROPS
+        protected override void Initialize(IPluginContext context, string kind, string label, string icon)
+        {
+            this._label = GetLabel(label);
+            this._kind = GetKind(kind);
+            this._icon = icon;
+            this._visible = true;
+            this._stream = GetStream(icon, Directory);
+            CreateNativeItem();
+        }
 
-        public string Label 
+        #region Properties
+
+        protected override string LabelCore 
         {
             get
             {
-                ThrowIfDisposed();
-                return this.Label; 
+                return this._label; 
             }
             set
             {
-                ThrowIfDisposed();
-                if (value == label) return;
-                label = GetLabel(value);
-                CreateItem();
-            }
-        }
-
-        public string Kind 
-        { 
-            get
-            {
-                ThrowIfDisposed();
-                return kind.ToString();
-            }
-            set
-            {
-                ThrowIfDisposed();
-                if (value == Kind) return;
-                kind = GetKind(value);
-                CreateItem();
-            }
-        }
-
-        public string Icon
-        {
-            get
-            {
-                ThrowIfDisposed();
-                return icon;
-            }
-            set
-            {
-                ThrowIfDisposed();
-                if (value == icon) return;
-                icon = value;
-                stream = GetStream(icon);
-                CreateItem();
-            }
-        }
-
-        public IContextMenuItem? Parent 
-        { 
-            get
-            {
-                ThrowIfDisposed();
-                return parent;
-            }
-            internal set
-            {
-                ThrowIfDisposed(); 
-                parent = value;
-            } 
-        }
-
-        public IContextMenuItem[] Children
-        {
-            get
-            {
-                ThrowIfDisposed();
-                return this.children.ToArray();
-            }
-        }
-
-        public bool Checked 
-        {
-            get
-            {
-                ThrowIfDisposed();
-                return this.Item.IsChecked;
-            }
-            set
-            {
-                ThrowIfDisposed();
-                this.Item.IsChecked = value;
-            }
-        }
-
-        public bool Enabled 
-        {
-            get
-            {
-                ThrowIfDisposed();
-                return this.Item.IsEnabled;
-            }
-            set
-            {
-                ThrowIfDisposed();
-                this.Item.IsEnabled = value;
-            }
-        }
-
-        public bool Visible 
-        {
-            get
-            {
-                ThrowIfDisposed();
-                return visible;
-            }
-            set
-            {
-                ThrowIfDisposed();
-                visible = value;
-            }
-        }
-
-        public object? Callback 
-        {
-            get
-            {
-                ThrowIfDisposed();
-                return callback!.Raw;
-            }
-            set
-            {
-                ThrowIfDisposed();
-
-                if (value == this.callback?.Raw)
+                if (value == _label) 
                     return;
 
-                this.callback?.Dispose();
-                this.callback = null;
+                _label = GetLabel(value);
+                CreateNativeItem();
+            }
+        }
+
+        protected override string KindCore
+        { 
+            get
+            {
+                return _kind.ToString();
+            }
+            set
+            {
+                if (value == Kind) 
+                    return;
+
+                _kind = GetKind(value);
+                CreateNativeItem();
+            }
+        }
+
+        protected override string IconCore
+        {
+            get
+            {
+                return _icon;
+            }
+            set
+            {
+                if (value == _icon) 
+                    return;
+                
+                _icon = value;
+                _stream = GetStream(_icon, Directory);
+                CreateNativeItem();
+            }
+        }
+
+        protected override bool CheckedCore
+        {
+            get
+            {
+                return this._Item.IsChecked;
+            }
+            set
+            {
+                this._Item.IsChecked = value;
+            }
+        }
+
+        protected override bool EnabledCore
+        {
+            get
+            {
+                return this._Item.IsEnabled;
+            }
+            set
+            {
+                this._Item.IsEnabled = value;
+            }
+        }
+
+        protected override bool VisibleCore
+        {
+            get
+            {
+                return _visible;
+            }
+            set
+            {
+                _visible = value;
+            }
+        }
+
+        protected override object? CallbackCore
+        {
+            get
+            {
+                return _callback?.Raw;
+            }
+            set
+            {
+                if (value == this._callback?.Raw)
+                    return;
+
+                this._callback?.Dispose();
+                this._callback = null;
 
                 if (value == null)
                     return;
 
-                this.callback = IJSFunction.Create(value);
+                this._callback = IJSFunction.Create(value);
             }
         }
 
         #endregion
 
-        #region METHODS
+        #region Methods
 
-        public void AddItem(IContextMenuItem item)
+        protected override void AddItemCore(IContextMenuItem item)
         {
-            ThrowIfDisposed();
-            this.CheckKind(this.Item);
+            this.CheckKind(this._Item);
             this.AllowInsertItem(item);
 
-            ContextMenuItem rawItem = GetRamItem(item);
+            ContextMenuItem rawItem = GetRawItem(item);
 
-            this.Item.Children.Add(rawItem.Item);
-            this.children.Add(item);
+            this._Item.Children.Add(rawItem._Item);
+            this._children!.Add(item);
 
-            rawItem.Parent = this;
+            rawItem._parent = this;
 
         }
 
-        public void InsertItem(int index, IContextMenuItem item)
+        protected override void InsertItemCore(int index, IContextMenuItem item)
         {
-            ThrowIfDisposed();
-            this.CheckKind(this.Item);
+            this.CheckKind(this._Item);
             this.AllowInsertItem(item);
 
-            ContextMenuItem rawItem = GetRamItem(item);
+            ContextMenuItem rawItem = GetRawItem(item);
 
-            this.Item.Children.Insert(index, rawItem.Item);
-            this.children.Insert(index, item);
+            this._Item.Children.Insert(index, rawItem._Item);
+            this._children!.Insert(index, item);
 
-            rawItem.Parent = this;
+            rawItem._parent = this;
         }
 
-        public void RemoveItem(IContextMenuItem item)
+        protected override void RemoveItemCore(IContextMenuItem item)
         {
-            ThrowIfDisposed();
-            this.CheckKind(this.Item);
+            this.CheckKind(this._Item);
 
-            ContextMenuItem rawItem = GetRamItem(item);
+            ContextMenuItem rawItem = GetRawItem(item);
 
-            this.Item.Children.Remove(rawItem.Item);
-            this.children.Remove(item);
+            this._Item.Children.Remove(rawItem._Item);
+            this._children!.Remove(item);
 
-            rawItem.Parent = null;
+            rawItem._parent = null;
         }
 
-        public void RemoveItemAt(int index)
+        protected override void RemoveItemAtCore(int index)
         {
-            ThrowIfDisposed();
-            this.CheckKind(this.Item);
+            this.CheckKind(this._Item);
 
-            ContextMenuItem rawItem = GetRamItem(this.children[index]);
+            ContextMenuItem rawItem = GetRawItem(this._children![index]);
 
-            this.Item.Children.RemoveAt(index);
-            this.children.RemoveAt(index);
+            this._Item.Children.RemoveAt(index);
+            this._children.RemoveAt(index);
 
-            rawItem.Parent = null;
+            rawItem._parent = null;
         }
 
-        public void Clear()
+        protected override void ClearCore()
         {
-            ThrowIfDisposed();
+            this._Item.Children.Clear();
 
-            this.Item.Children.Clear();
+            foreach (var item in this._children!)
+                ((ContextMenuItem)item)._parent = null;
 
-            foreach (var item in this.children)
-                ((ContextMenuItem)item).Parent = null;
-
-            this.children.Clear();
+            this._children.Clear();
         }
 
         #endregion
 
-        #region DISPOSE
-
-        internal bool Disposed;
-
-        private void Dispose(bool disposing)
+        protected override void DisposeCore(bool disposing)
         {
-            if (Disposed)
+            if(!disposing)
                 return;
 
-            if (this.Item != null && this.Item.Kind != CoreWebView2ContextMenuItemKind.Separator || this.Item.Kind == CoreWebView2ContextMenuItemKind.Submenu)
-                this.Item.CustomItemSelected -= Item_CustomItemSelected;
+            if(_item != null)
+            {
+                if(_item.Kind != CoreWebView2ContextMenuItemKind.Separator || _item.Kind == CoreWebView2ContextMenuItemKind.Submenu)
+                    _item.CustomItemSelected -= Item_CustomItemSelected;
 
-            this.callback = null!;
-            this.Parent = null;
-            this.stream?.Dispose();
-            this.stream = null!;
-            //this.Item.Children.Clear();   // Causa excepción
+                //_item.Children.Clear(); // Causa excepción
+                _item = null;
+            }
 
-            foreach (var item in this.children)
-                item.Dispose();
+            _callback?.Dispose();
+            _callback = null;
 
-            this.children.Clear();
+            _stream?.Dispose();
+            _stream = null;
         }
-
-        public void Dispose()
-        {
-            if (Disposed)
-                return;
-
-            Dispose(true);
-
-            // Evitar que el Garbage Collector llame al destructor/Finalizador ~Plugin()
-            GC.SuppressFinalize(this);
-
-            Disposed = true;
-        }
-
-        ~ContextMenuItem()
-        {
-            Dispose(false);
-            Disposed = true;
-        }
-
-        #endregion
 
         #region HELPERS
 
-        private void CreateItem()
+        private void CreateNativeItem()
         {
-            if (this.WV.WVController == null)
-                throw new Exception(this.WV.Name + " no ready");
+            var wv = (WebView)WebView;
+            var WVController = wv.InternalBrowser.WVController;
+
+            if (WVController == null)
+                throw new Exception(wv.Name + " no ready");
 
             // Si ya habia un Item creado, quitarle el evento
-            if(this.Item != null && IsSelecteable(kind))
-                this.Item.CustomItemSelected -= Item_CustomItemSelected;
+            if(_item != null && IsSelecteable(_kind))
+                _item.CustomItemSelected -= Item_CustomItemSelected;
 
-            this.Item = this.WV.WVController.CoreWebView2.Environment.CreateContextMenuItem(label, stream, kind);
+            _item = WVController.CoreWebView2.Environment.CreateContextMenuItem(_label, _stream, _kind);
 
-            if(IsSelecteable(kind))
-                this.Item.CustomItemSelected += Item_CustomItemSelected;
+            if(IsSelecteable(_kind))
+                _item.CustomItemSelected += Item_CustomItemSelected;
         }
 
         private void Item_CustomItemSelected(object? sender, object e)
@@ -323,7 +262,7 @@ namespace WV.Win.Imp
             if (item.Kind == CoreWebView2ContextMenuItemKind.CheckBox || item.Kind == CoreWebView2ContextMenuItemKind.Radio)
                 item.IsChecked = !item.IsChecked;
 
-            this.callback?.Execute(item.Kind.ToString(), item.IsChecked);
+            this._callback?.Execute(item.Kind.ToString(), item.IsChecked);
         }
 
         private bool IsSelecteable(CoreWebView2ContextMenuItemKind kind)
@@ -344,7 +283,7 @@ namespace WV.Win.Imp
             return ekind;
         }
 
-        private static Stream? GetStream(string icon)
+        private static Stream? GetStream(string icon, string directory)
         {
             if (string.IsNullOrWhiteSpace(icon))
                 return null;
@@ -352,7 +291,7 @@ namespace WV.Win.Imp
             string fullPath = icon;
 
             if (!Path.IsPathFullyQualified(icon))
-                fullPath = AppManager.SrcPath + "/" + icon;
+                fullPath = Path.Combine(directory, icon);
 
             if (!File.Exists(fullPath))
                 throw new FileNotFoundException("File not found: '" + icon + "'");
@@ -366,9 +305,10 @@ namespace WV.Win.Imp
             if (item.Parent != null)
                 throw new Exception("This item belongs to a submenu");
 
-            if (this.children.Contains(item))
+            if (this._children!.Contains(item))
                 throw new Exception("This item already exists");
         }
+        
         private void CheckKind(CoreWebView2ContextMenuItem item)
         {
             if (item.Kind == CoreWebView2ContextMenuItemKind.Submenu)
@@ -377,7 +317,7 @@ namespace WV.Win.Imp
             throw new Exception("This item is not a submenu");
         }
 
-        private ContextMenuItem GetRamItem(IContextMenuItem item)
+        private ContextMenuItem GetRawItem(IContextMenuItem item)
         {
             ContextMenuItem rawItem = (ContextMenuItem)item;
 
@@ -385,11 +325,6 @@ namespace WV.Win.Imp
                 throw new InvalidOperationException("item is disposed");
 
             return rawItem;
-        }
-
-        private void ThrowIfDisposed()
-        {
-            Plugin.ThrowIfDisposed(this.WV);
         }
 
         #endregion

@@ -1,7 +1,10 @@
-﻿using WV.Logger;
-using WV.Win.Imp;
+﻿using WV.Win.Imp;
 using WV.Interfaces;
 using WV.Win.Scripts;
+using WV.Core.Logging;
+using WV.Core.Logging.Sinks;
+using WV.Enums;
+using WV.Configs;
 
 namespace WV.Win
 {
@@ -11,41 +14,37 @@ namespace WV.Win
         static void Main(string[] args)
         {
             // Cargar JScript principal
-            Helpers.JScripts.Add(PackJSScript(ScriptResources.MainScript.Replace("-HostObjectName-", Helpers.HostObjectName)));
-            
-            string? uri = null;
-            string? lang = null;
-            IContext ctx = CreateDefaultContext();
+            Utils.JScripts.Add(PackJScript(ScriptResources.MainScript.Replace("-HostObjectName-", Utils.HostObjectName)));
+
+            WebViewConfig config = new();
 
             if (args.Length > 0)
-                uri = args[0];
+                config = Core.Utils.GetWebViewConfig(args[0]) ?? config;
+            else
+            {
+                var path = Path.Combine(App.Directory, "WV.json");
 
-            if (args.Length > 1)
-                lang = args[1];
+                if(File.Exists(path))
+                    config = Core.Utils.GetWebViewConfig(File.ReadAllText(path)) ?? config;
+            }
 
-            if (string.IsNullOrWhiteSpace(uri) || uri.ToLower() == "null")
-                uri = null;
-            
+            IPluginContext ctx = CreateDefaultContext(config);
+
             // Se inicia una Instancia de WebView (Inicia el programa)
-            _ = new WebView(ctx, uri, lang);
+            _ = new WebView(ctx, config);
 
         }
 
-        private static string PackJSScript(string? script)
+        private static string PackJScript(string? script)
         {
             return "(_=>{ /**/ " + script + " /**/ })();";
         }
 
-        private static ILogger CreateDefaultLogger()
+        private static ILogger CreateDefaultLogger(LoggerConfig config)
         {
-            // "C:\\Users\\....\\AppData\\Local\\WV.js\\logs"
-            //var logDir = Path.Combine(
-            //    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            //    "WV.js", "logs");
+            var logDir = Core.Utils.GetFullDirectory(App.Directory, config.Directory);
 
-            var logDir = Path.Combine(Directory.GetCurrentDirectory(), "logs");
-
-            var logger = new Logger.Logger("Main-WebView")
+            var logger = new Logger(config.Source)
                 .AddSink(new ConsoleSink())
                 .AddSink(new FileSink(Path.Combine(logDir, "wv.log")));
 
@@ -53,11 +52,11 @@ namespace WV.Win
             return logger;
         }
 
-        private static IContext CreateDefaultContext()
+        private static IPluginContext CreateDefaultContext(WebViewConfig config)
         {
-            ILogger logger = CreateDefaultLogger();
+            ILogger logger = CreateDefaultLogger(config.Logger);
             string name = typeof(WebView).Name;
-            return Helpers.CreateContext(null, logger, name);
+            return Utils.CreateContext(null, logger, name);
         }
     }
 }

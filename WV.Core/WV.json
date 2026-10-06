@@ -1,0 +1,58 @@
+﻿{
+    "version": 1,
+    "Logger": {
+        "Source": "WV",
+        "Enabled": true,
+        "MinimumLevel": "Info",
+        "Directory": "logs",
+        "MaxFileBytes": 5242880
+    },
+    "Browser": {
+        "Language": "es-ES",
+        "Directory": "src",
+        "Uri": "index.html",
+        "HotReload": false,
+        "AcceleratorKeys": true,
+        "SwipeNavigation": false,
+        "ZoomFactor": 1,
+        "Muted": false,
+        "StatusBarEnabled": true,
+        "ColorScheme": "Auto"
+    },
+    "Plugins": {
+        "Directory": "plugins",
+        "Load": []
+    },
+    "Window": {
+        "Title": "WV.js",
+        "State": "None",
+        "CenterScreen": false,
+        "Rect": {
+            "X": 0,
+            "Y": 0,
+            "Width": 800,
+            "Height": 600,
+            "MaxWidth": 1000000,
+            "MaxHeight": 1000000,
+            "MinWidth": 136,
+            "MinHeight": 39
+        }
+    },
+    "PrintManager": {
+        "MarginBottom": 1,
+        "MarginLeft": 1,
+        "MarginRight": 1,
+        "MarginTop": 1,
+        "PageWidth": 21,
+        "PageHeight": 29.7,
+        "ScaleFactor": 1,
+        "PrintBackgrounds": false,
+        "PrintSelectionOnly": false,
+        "PrintHeaderAndFooter": false,
+        "FooterUri": null,
+        "PagesPerSide": 1,
+        "ColorMode": "Default",
+        "Collation": "Default",
+        "Orientation": "Portrait"
+    }
+}

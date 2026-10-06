@@ -3,7 +3,7 @@
     public interface IWebView : IDisposable
     {
 
-        #region READONLY PROPERTIES
+        #region Properties
 
         /// <summary>
         /// Gets a value that identify this WebView
@@ -28,6 +28,11 @@
         /// <summary>
         /// 
         /// </summary>
+        IPlugins Plugins { get; }
+
+        /// <summary>
+        /// 
+        /// </summary>
         IPrintManager PrintManager { get; }
 
         /// <summary>
@@ -39,55 +44,20 @@
         bool IsMain { get; }
 
         /// <summary>
-        /// Gets an array with all the names of the loaded plugins
+        /// 
         /// </summary>
-        string[] PluginsName { get; }
+        bool Disposed { get; }
 
         #endregion
 
         //-------------------------------------------//
 
-        #region METHODS
-
-        /// <summary>
-        /// Create an instance of a plugin
-        /// </summary>
-        /// <param name="pluginName"></param>
-        /// <param name="args"></param>
-        /// <returns></returns>
-        object NewPluginInstance(string pluginName, params object[] args);
-
-        /// <summary>
-        /// Retrieves a plugin instance using its UID
-        /// </summary>
-        /// <param name="UID"></param>
-        /// <returns></returns>
-        object GetPluginInstance(string UID);
+        #region Methods
 
         /// <summary>
         /// Restart the application
         /// </summary>
         void Restart();
-
-        /// <summary>
-        /// Load plugins from folder
-        /// </summary>
-        /// <param name="foldePath"></param>
-        /// <returns></returns>
-        string[] LoadPluginsFromFolder(string foldePath = "");
-
-        /// <summary>
-        /// Load plugin from path
-        /// </summary>
-        /// <param name="pluginPath"></param>
-        /// <returns></returns>
-        string LoadPlugin(string pluginPath);
-
-        /// <summary>
-        /// Unload plugin by name
-        /// </summary>
-        /// <param name="pluginName"></param>
-        void UnloadPlugin(string pluginName);
 
         #endregion
 

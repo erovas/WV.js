@@ -1,7 +1,7 @@
 ﻿using System.Linq.Expressions;
 using System.Reflection;
 using WV.Interfaces;
-using static WV.AppManager;
+using static WV.App.Delegates;
 
 namespace WV
 {
@@ -48,7 +48,7 @@ namespace WV
 
         #region Fields
 
-        private readonly IContext _context;
+        private readonly PluginContext _context;
         private int _disposed;
         private readonly Dictionary<string, List<Tuple<IJSFunction, Delegate>>> _eventHandlers = new();
         private readonly Dictionary<string, List<Tuple<object?, IJSFunction>>> _rawFNs = new();
@@ -65,12 +65,13 @@ namespace WV
 
         #endregion
 
-        protected Plugin(IContext context)
+        protected Plugin(IPluginContext context)
         {
-            if(AppManager.IsInitialized && context.WebView is null)
+            if(App.IsInitialized && context.WebView is null)
                 throw new NullReferenceException("Context.WebView cannot be null.");
 
-            this._context = context;
+            this._context = (PluginContext)context;
+            this._context._webview ??= (IWebView)this;
         }
 
         /// <summary>
@@ -81,66 +82,67 @@ namespace WV
         /// <exception cref="InvalidOperationException"></exception>
         public void AddEventListener(string type, object callback)
         {
-            Logger.Debug($"##. Ejecutando AddEventListener(\"{type}\", {nameof(callback)})");
+            var txt = $"{nameof(AddEventListener)}(\"{type}\", {nameof(callback)}) method.";
+            Logger.Info("##. Calling " + txt);
 
             try
             {
-                Logger.Debug("0. Comprobando que el plugin está Disposed");
+                Logger.Debug("0. Verifying that the plugin is disposed.");
                 ThrowIfDisposed();
 
-                Logger.Debug("1. Obteniendo información del evento (EventInfo)");
+                Logger.Debug("1. Retrieving event information (EventInfo).");
                 EventInfo? eventInfo = GetType().GetEvent(type);
                 if (eventInfo == null)
                 {
-                    Logger.Debug($"1.1 No existe el evento (\"{type}\")");
+                    Logger.Debug($"1.1 The (\"{type}\") event does not exist.");
                     return;
                 }
                     
-                Logger.Debug("2. Obteniendo el tipo del delegado del evento");
+                Logger.Debug("2. Obtaining the event delegate type.");
                 Type? delegateType = eventInfo.EventHandlerType;
                 if (delegateType == null || !delegateType.Name.StartsWith(Plugin.WVEventName))
                 {
-                    Logger.Debug($"2.1 No existe el delegado para el evento (\"{type}\")");
+                    Logger.Debug($"2.1 There is no delegate for the (\"{type}\") event.");
                     return;
                 }
 
-                Logger.Debug("3. Creando JSFunction");
+                Logger.Debug("3. Creating JSFunction.");
                 IJSFunction fn = IJSFunction.Create(callback);
 
-                Logger.Debug("4. Obteniendo información de los parametros del delegado");
+                Logger.Debug("4. Retrieving information from the delegate parameters.");
                 ParameterInfo[] parameters = delegateType.GetMethod("Invoke")!.GetParameters();
 
-                Logger.Debug("5. Validando que hay al menos un parametro en el delegado");
+                Logger.Debug("5. Validating that there is at least one parameter in the delegate.");
                 if (parameters.Length < 1)  // Primer parametro IWebView obligatorio
-                    throw new InvalidOperationException("El evento debe tener al menos un parámetro");
+                    throw new InvalidOperationException("The event must have at least one parameter.");
 
-                Logger.Debug("6. Construyendo parámetros para la expresión (todos los del evento)");
+                Logger.Debug("6. Constructing parameters for the expression (all those from the event).");
                 ParameterExpression[] paramExpressions = parameters
                     .Select((p, i) => Expression.Parameter(p.ParameterType, $"p{i}"))
                     .ToArray();
 
-                Logger.Debug("7. Creando IEnumerable<Expression>");
+                Logger.Debug("7. Creating IEnumerable<Expression>");
                 IEnumerable<Expression> IEExpression = paramExpressions
                     .Skip(1)  // Excluir el primer parametro que será el sender (IWebView).
                     .Select(p => Expression.Convert(p, typeof(object)));
 
-                Logger.Debug("8. Creando NewArrayExpression");
+                Logger.Debug("8. Creating NewArrayExpression");
                 NewArrayExpression argsArray = Expression.NewArrayInit(typeof(object), IEExpression);
 
-                Logger.Debug("9. Creando MethodCallExpression");
+                Logger.Debug("9. Creating MethodCallExpression");
                 MethodCallExpression executeCall = Expression.Call(
                     Expression.Constant(fn),
                     typeof(IJSFunction).GetMethod("Execute")!,
                     argsArray
                 );
 
-                Logger.Debug("10. Creando manejador del delegado (Delegate)");
+                Logger.Debug("10. Creating the delegate handler.");
                 Delegate handler = Expression.Lambda(delegateType, executeCall, paramExpressions).Compile();
 
-                Logger.Debug("11. Agregando el manejador del delegado creado (Delegate) al evento (EventInfo)");
+                Logger.Debug("11. Adding the created delegate handler to the event (EventInfo).");
                 eventInfo.AddEventHandler(this, handler);
 
-                Logger.Debug("12. Seguimiento de los manejadores");
+                Logger.Debug("12. Handler tracking.");
                 if (!_eventHandlers.ContainsKey(type))
                     _eventHandlers[type] = new List<Tuple<IJSFunction, Delegate>>();
 
@@ -152,7 +154,7 @@ namespace WV
             }
             catch (Exception ex)
             {
-                Logger.Error(ex.Message, ex);
+                Logger.Error("@@. Fail calling " + txt, ex);
                 throw;
             }
         }
@@ -164,53 +166,54 @@ namespace WV
         /// <param name="callback"></param>
         public void RemoveEventListener(string type, object callback)
         {
-            Logger.Debug($"##. Ejecutando RemoveEventListener(\"{type}\", {nameof(callback)})");
+            var txt = $"{nameof(RemoveEventListener)}(\"{type}\", {nameof(callback)}) method.";
+            Logger.Info($"##. Calling " + txt);
 
             try
             {
-                Logger.Debug("0. Comprobando que el plugin está Disposed");
+                Logger.Debug("0. Verifying that the plugin is disposed.");
                 ThrowIfDisposed();
 
-                Logger.Debug("1. Obteniendo información del evento (EventInfo)");
+                Logger.Debug("1. Retrieving event information (EventInfo).");
                 EventInfo? eventInfo = GetType().GetEvent(type);
 
                 if (eventInfo == null)
                 {
-                    Logger.Debug($"1.1 No existe el evento (\"{type}\")");
+                    Logger.Debug($"1.1 The (\"{type}\") event does not exist.");
                     return;
                 }
 
-                Logger.Debug("2. Obteniendo el <Raw, IJSFunction> asociado al evento");
+                Logger.Debug("2. Obtaining the <Raw, IJSFunction> associated with the event.");
                 if (!_rawFNs.TryGetValue(type, out var rawsIJSFn))
                 {
-                    Logger.Debug($"2.1 No existe el <Raw, IJSFunction> asociado al evento (\"{type}\")");
+                    Logger.Debug($"2.1 The <Raw, IJSFunction> associated with the (\"{type}\") event does not exist.");
                     return;
                 }
 
-                Logger.Debug("3. Obteniendo el <IJSFunction, Delegate> asociado al evento");
+                Logger.Debug("3. Obtaining the <IJSFunction, Delegate> associated with the event.");
                 if (!_eventHandlers.TryGetValue(type, out var handlers))
                 {
-                    Logger.Debug($"3.1 No existe el <IJSFunction, Delegate> asociado al evento (\"{type}\")");
+                    Logger.Debug($"3.1 There is no <IJSFunction, Delegate> associated with the (\"{type}\") event.");
                     return;
                 }
 
-                Logger.Debug($"4. Obteniendo el IJSFunction a travez del Raw ({nameof(callback)})");
+                Logger.Debug($"4. Obtaining the IJSFunction via the Raw object ({nameof(callback)}).");
                 IJSFunction? fn = rawsIJSFn.Find(x => x.Item1 == callback)?.Item2;
 
                 if (fn == null)
                 {
-                    Logger.Debug($"4.1 No existe un IJSFunction asociado al evento (\"{type}\") a travez del Raw ({nameof(callback)})");
+                    Logger.Debug($"4.1 There is no IJSFunction associated with the (\"{type}\") event via the Raw ({nameof(callback)}).");
                     return;
                 }
 
-                Logger.Debug("5. Removiendo todos los manejadores (Delegate) del evento (EventInfo) y del seguimiento");
+                Logger.Debug("5. Removing all handlers (delegates) from the event (EventInfo) and the tracking mechanism.");
                 foreach (var handlerTuple in handlers.Where(t => t.Item1 == fn).ToList())
                 {
                     eventInfo.RemoveEventHandler(this, handlerTuple.Item2);
                     handlers.Remove(handlerTuple);
                 }
 
-                Logger.Debug("6. Removiendo todas los IJSFunction del seguimiento");
+                Logger.Debug("6. Removing all IJSFunctions from the tracking.");
                 foreach (var rawTuple in rawsIJSFn.Where(t => t.Item2 == fn).ToList())
                 {
                     rawsIJSFn.Remove(rawTuple);
@@ -219,21 +222,37 @@ namespace WV
             }
             catch (Exception ex)
             {
-                Logger.Error(ex.Message, ex);
+                Logger.Error("@@. Fail calling " + txt, ex);
                 throw;
             }
         }
 
         public void Dispose()
         {
+            CleanUp(true);
+            GC.SuppressFinalize(this);
+        }
+
+        ~Plugin()
+        {
+            CleanUp(false);
+        }
+
+        private void CleanUp(bool disposing)
+        {
+            Logger.Info($"##. Calling {nameof(Dispose)}({disposing}) method.");
+
             if (Interlocked.Exchange(ref _disposed, 1) == 1)
                 return;
 
             try
             {
-                ClearListeners();
-                ClearEvents();
-                Dispose(true);
+                if (disposing)
+                {
+                    ClearListeners();
+                    ClearEvents();
+                }
+                Dispose(disposing);
             }
             catch (Exception ex)
             {
@@ -241,13 +260,13 @@ namespace WV
             }
             finally
             {
-                try 
-                { 
-                    _context.OnDisposed?.Invoke(UID); 
+                try
+                {
+                    _context.OnDisposed?.Invoke(UID);
                 }
-                catch (Exception ex) 
-                { 
-                    Logger.Error($"Notify failed for {UID}", ex); 
+                catch (Exception ex)
+                {
+                    Logger.Error($"Notify failed for {UID}", ex);
                 }
 
                 _context.Release();
@@ -255,18 +274,12 @@ namespace WV
             }
         }
 
-        //=======================================//
+        protected abstract void Dispose(bool disposing);
 
-        protected virtual void Dispose(bool disposing)
-        {
-            // Do nothing
-        }
+        //=======================================//
 
         protected void ClearListeners()
         {
-            if (this.Disposed)
-                return;
-
             // Eliminar todos los handlers de eventos
             foreach (var eventEntry in _eventHandlers)
             {
@@ -285,16 +298,8 @@ namespace WV
             _rawFNs.Clear();
         }
 
-        /// <summary>
-        /// Pone a null el campo de respaldo de todos los eventos field-like
-        /// declarados en esta instancia y en toda su jerarquía.
-        /// No pasa por add/remove.
-        /// </summary>
-        protected virtual void ClearEvents()
+        protected void ClearEvents()
         {
-            if (this.Disposed)
-                return;
-
             var fields = DiscoverEventFields(this.GetType());
 
             // Asignación directa al campo: no invoca remove().
