@@ -2,7 +2,7 @@
 
 namespace WV.Core
 {
-    public abstract class WVList<T> : IWVList<T>
+    public abstract class WVList<T>
     {
         protected readonly List<T> _items;
 

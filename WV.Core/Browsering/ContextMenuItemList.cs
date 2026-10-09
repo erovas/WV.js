@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using WV.Interfaces;
+﻿using WV.Interfaces;
 
 namespace WV.Core.Browsering
 {

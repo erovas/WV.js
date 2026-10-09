@@ -1,7 +1,23 @@
 ﻿namespace WV.Interfaces
 {
-    public interface IPluginLoadResultList : IWVList<IPluginLoadResult>
+    public interface IPluginLoadResultList
     {
+        IPluginLoadResult this[int index] { get; }
+
+        int Length { get; }
+
+        int Count { get; }
+
+        bool IsEmpty { get; }
+
+        bool Any { get; }
+
+        IPluginLoadResult? First { get; }
+
+        IPluginLoadResult? Last { get; }
+
+        IPluginLoadResult? Get(int index);
+
         int SuccessCount { get; }
 
         int FailureCount { get; }
