@@ -14,15 +14,11 @@ For Windows 10 or higher.
 | `Name`               | Plugin name |
 | `Window`              | Gets a IWindow instance |
 | `Browser`  | Gets a IBrowser instance |
-| `PrintManager`| Return IPrintManager instance |
+| `PrintManager`| Gets IPrintManager instance |
+| `Plugins`| Gets IPlugins instance |
 
 | Method       | Description                                                                                             |
 |--------------------------|---------------------------------------------------------------------------------------------------------|
-| `LoadPluginsFromFolder(folderPath = "")`               | If the parameter is not set, all plugins will be loaded from the plugins folder, otherwise the parameter must be an absolute path. Returns an array of strings with the plugins that have failed to load.  |
-| `LoadPlugin(pluginPath)`               | Load plugin from path. Parameter can be relative or absolute path. Return plugin name. |
-| `UnloadPlugin(pluginName)`              | Unload plugin by name. |
-| `NewPluginInstance(pluginName, ...args)`  | Create an instance of a plugin. An instance of a plugin contains a unique UID. |
-| `GetPluginInstance(UID)`| Retrieves a plugin instance using its UID. |
 | `Restart()`| Restart the application if WebView is the main one, otherwise throw exception. |
 
 
@@ -67,13 +63,13 @@ For Windows 10 or higher.
 
 | Event       | Description                                                                                             |
 |--------------------------|---------------------------------------------------------------------------------------------------------|
-| `StateChanged, OnStateChanged`               | StateChanged event. Fire when WindowState change. (integer, string) == (State, StateText) |
-| `Closing, OnClosing`               | Close event. It is triggered when the PreventClose property is true and try to close the window. |
-| `PositionChanged, OnPositionChanged`              | PositionChanged event. It is triggered when the window changes position. (number, number) == (X, Y)|
-| `Activated, OnActivated`| Activated event. (boolean) == (activated)|
-| `EnabledEvent, OnEnabled`| Enabled event. (boolean) == (enabled)|
-| `Visible, OnVisible`| Visible event. (boolean) == (visible)|
-| `SizeChanged, OnSizeChanged`| Size Changed event. (number, number) == (width, height)|
+| `StateChanged`               | StateChanged event. Fire when WindowState change. (integer, string) == (State, StateText) |
+| `Closing`               | Close event. It is triggered when the PreventClose property is true and try to close the window. |
+| `PositionChanged`              | PositionChanged event. It is triggered when the window changes position. (number, number) == (X, Y)|
+| `Activated`| Activated event. (boolean) == (activated)|
+| `EnabledEvent`| Enabled event. (boolean) == (enabled)|
+| `Visible`| Visible event. (boolean) == (visible)|
+| `SizeChanged`| Size Changed event. (number, number) == (width, height)|
 | `Raw`| Raw event for platform specific. To use it in plugins C#. |
 
 ### IRect
@@ -113,13 +109,11 @@ For Windows 10 or higher.
 | `ZoomFactor`  | Gets or sets the zoom factor for the WebView. |
 | `MaxZoomFactor`  | Gets maximum ZommFactor. |
 | `MinZoomFactor`  | Gets minimum ZoomFactor. |
-| `ResetWebViewOnReload`  | When WebView is reload, reset all settings to default. Default value is false. |
 | `ContextMenu`  | Gets IContextMenu instance. |
 | `Muted`  | Indicates whether all audio output from this WebView2 is muted or not. Set to true will mute this CoreWebView2, and set to false will unmute this WebView2. True if audio is muted. |
 | `StatusBarText`  | Get last status bar text. |
 | `ColorScheme`  | Get or set browser color scheme. 0 = Auto; 1 = Light; 2 = Dark. |
 | `ColorSchemeText`  | Gets or sets the browser's color scheme by text. |
-
 
 
 | Method       | Description                                                                                             |
@@ -138,10 +132,10 @@ For Windows 10 or higher.
 
 | Event       | Description                                                                                             |
 |--------------------------|---------------------------------------------------------------------------------------------------------|
-| `PlayingAudio, OnPlayingAudio`  | PlayingAudio Event. It is triggered when the browser is playing audio. (boolean) == (isPlayingAudio) |
-| `MutedEvent, OnMuted`  | Muted Event. It is triggered when the browser is muted or unmute. (boolean) == (muted) |
-| `ZoomFactorChanged, OnZoomFactorChanged` | ZoomFactor changed event (number) == (zoomFactor)|
-| `StatusBarTextChanged, OnStatusBarTextChanged`| StatusBarTextChanged event. (string) == (statusBarText)|
+| `PlayingAudio`  | PlayingAudio Event. It is triggered when the browser is playing audio. (boolean) == (isPlayingAudio) |
+| `MutedEvent`  | Muted Event. It is triggered when the browser is muted or unmute. (boolean) == (muted) |
+| `ZoomFactorChanged` | ZoomFactor changed event (number) == (zoomFactor)|
+| `StatusBarTextChanged`| StatusBarTextChanged event. (string) == (statusBarText)|
 
 
 ### IContextMenu
@@ -189,7 +183,6 @@ For Windows 10 or higher.
 
 ### IPrintManager
 
-
 | Property       | Description                                                                                             |
 |--------------------------|---------------------------------------------------------------------------------------------------------|
 | `IsBusy`               | Gets a value indicating that the printmanager is printing. |
@@ -228,7 +221,85 @@ For Windows 10 or higher.
 
 | Event       | Description                                                                                             |
 |--------------------------|---------------------------------------------------------------------------------------------------------|
-| `PrintFinished, OnPrintFinished`  | PrintFinished Event. (number, string) == (PrintStatus, PrintStatusText). 0 = Succeeded; 1 = PrinterUnavailable; 2 = OtherError. |
+| `PrintFinished`  | PrintFinished Event. (number, string) == (PrintStatus, PrintStatusText). 0 = Succeeded; 1 = PrinterUnavailable; 2 = OtherError. |
+
+### IPlugins
+
+| Property       | Description                                                                                             |
+|--------------------------|---------------------------------------------------------------------------------------------------------|
+| `Loaded`               | Gets an instance of IPluginMetadataList containing all the metadata for the loaded plugins.. |
+| `Directory`               | Gets a plugins directory. |
+
+| Method       | Description                                                                                             |
+|--------------------------|---------------------------------------------------------------------------------------------------------|
+| `LoadFrom(foldePath = "")`               | If the parameter is not set, all plugins will be loaded from the plugins directory, otherwise the parameter must be an absolute path. Returns an IPluginLoadResultList instance.  |
+| `Load(pluginPath)`               | Load plugin from path. Parameter can be relative or absolute path. Return IPluginLoadResult instance. |
+| `Unload(pluginName)`              | Unload plugin by name. |
+| `NewInstance(pluginName, ...args)`  | Create an instance of a plugin. An instance of a plugin contains a unique UID. |
+| `GetInstance(UID)`| Retrieves a plugin instance using its UID. |
+
+### IPluginMetadataList
+
+| Property       | Description                                                                                             |
+|--------------------------|---------------------------------------------------------------------------------------------------------|
+| `this[index]`  | Gets the IPluginMetadata at the specified index. |
+| `Length`               | Gets the length of the list. |
+| `Count`               | Gets the count of the list. |
+| `IsEmpty`               | Gets a value indicating whether the list is empty. |
+| `SingletonCount`        | Gets a value indicating the number of plugins that are singletons. |
+| `First`        | Gets the first IPluginMetadata from the loaded plugins, or null if no plugins are loaded. |
+| `Last`        | Gets the last IPluginMetadata from the loaded plugins, or null if no plugins are loaded. |
+
+
+| Method       | Description                                                                                             |
+|--------------------------|---------------------------------------------------------------------------------------------------------|
+| `Get(index)`               | Safely retrieves the IPluginMetadata for the specified index; returns null if the index does not exist.  |
+
+### IPluginMetadata
+
+| Property       | Description                                                                                             |
+|--------------------------|---------------------------------------------------------------------------------------------------------|
+| `Path`  | Gets the full path to the plugin. |
+| `Name`  | Gets the plugin name. |
+| `Type`  | Gets the plugin type. |
+| `Version`  | Gets the plugin version. |
+| `Singleton`  | Gets a value indicating whether the plugin is a singleton. |
+| `Author`  | Gets the plugin author. |
+| `Description`  | Gets the plugin description. |
+
+### IPluginLoadResultList
+
+| Property       | Description                                                                                             |
+|--------------------------|---------------------------------------------------------------------------------------------------------|
+| `this[index]`  | Gets the IPluginLoadResult at the specified index. |
+| `Length`               | Gets the length of the list. |
+| `Count`               | Gets the count of the list. |
+| `IsEmpty`               | Gets a value indicating whether the list is empty. |
+| `Any`        | Gets a value indicating whether there is any element. |
+| `SuccessCount`        | Gets a value indicating the number of successful cases.. |
+| `FailureCount`        | Gets a value indicating the number of failed cases.. |
+| `AnySuccess`        | Gets a value indicating whether there is any successful case. |
+| `AnyFailure`        | Gets a value indicating whether there is any failed case.. |
+| `AllSuccess`        | Gets a value indicating whether all cases are satisfactory. |
+| `AllFailed`        | Gets a value indicating whether all cases have failed. |
+| `First`        | Gets the first IPluginLoadResult from the loaded plugins, or null if no plugins are loaded. |
+| `Last`        | Gets the last IPluginLoadResult from the loaded plugins, or null if no plugins are loaded. |
+
+
+| Method       | Description                                                                                             |
+|--------------------------|---------------------------------------------------------------------------------------------------------|
+| `Get(index)`               | Safely retrieves the IPluginLoadResult for the specified index; returns null if the index does not exist.  |
+| `Successes()`               | Gets an instance of IPluginLoadResultList containing all successful cases.  |
+| `Failures()`               | Gets an instance of IPluginLoadResultList containing all the failed cases.  |
+
+### IPluginLoadResult
+
+| Property       | Description                                                                                             |
+|--------------------------|---------------------------------------------------------------------------------------------------------|
+| `Path`  | Gets the full path to the plugin. |
+| `Name`  | Gets the plugin name. |
+| `Success`  | Gets a value indicating whether it has been successfully loaded. |
+| `Error`  | Gets the error text if the plugin failed to load. |
 
 ## How to use?
 
