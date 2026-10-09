@@ -156,7 +156,7 @@ namespace WV.Win.Imp
             ContextMenuItem rawItem = GetRawItem(item);
 
             this._Item.Children.Add(rawItem._Item);
-            this._children!.Add(item);
+            this._children.Add(item);
 
             rawItem._parent = this;
 
@@ -170,7 +170,7 @@ namespace WV.Win.Imp
             ContextMenuItem rawItem = GetRawItem(item);
 
             this._Item.Children.Insert(index, rawItem._Item);
-            this._children!.Insert(index, item);
+            this._children.Insert(index, item);
 
             rawItem._parent = this;
         }
@@ -182,7 +182,7 @@ namespace WV.Win.Imp
             ContextMenuItem rawItem = GetRawItem(item);
 
             this._Item.Children.Remove(rawItem._Item);
-            this._children!.Remove(item);
+            this._children.Remove(item);
 
             rawItem._parent = null;
         }
@@ -191,7 +191,7 @@ namespace WV.Win.Imp
         {
             this.CheckKind(this._Item);
 
-            ContextMenuItem rawItem = GetRawItem(this._children![index]);
+            ContextMenuItem rawItem = GetRawItem(this._children[index]);
 
             this._Item.Children.RemoveAt(index);
             this._children.RemoveAt(index);
@@ -203,7 +203,7 @@ namespace WV.Win.Imp
         {
             this._Item.Children.Clear();
 
-            foreach (var item in this._children!)
+            foreach (var item in this._children)
                 ((ContextMenuItem)item)._parent = null;
 
             this._children.Clear();
@@ -305,7 +305,7 @@ namespace WV.Win.Imp
             if (item.Parent != null)
                 throw new Exception("This item belongs to a submenu");
 
-            if (this._children!.Contains(item))
+            if (this._children.Contains(item))
                 throw new Exception("This item already exists");
         }
         

@@ -27,7 +27,7 @@
         /// <summary>
         /// Gets the items contained in this item as static array.
         /// </summary>
-        IContextMenuItem[] Children { get; }
+        IContextMenuItemList Children { get; }
 
         /// <summary>
         /// Gets or sets checked.

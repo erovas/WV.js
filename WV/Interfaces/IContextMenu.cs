@@ -12,9 +12,9 @@ namespace WV.Interfaces
         bool Enable {  get; set; }
 
         /// <summary>
-        /// Gets all cotext menu items.
+        /// Gets context menu item list.
         /// </summary>
-        IContextMenuItem[] Children { get; }
+        IContextMenuItemList Children { get; }
 
         #endregion
 

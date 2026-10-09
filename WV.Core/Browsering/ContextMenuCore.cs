@@ -6,7 +6,8 @@ namespace WV.Core.Browsering
     {
         #region Fields
 
-        protected List<IContextMenuItem>? _children {  get; private set; }
+        protected readonly List<IContextMenuItem> _children;
+        private readonly IContextMenuItemList _ChildrenList;
 
         #endregion
 
@@ -17,6 +18,7 @@ namespace WV.Core.Browsering
             try
             {
                 _children = new List<IContextMenuItem>();
+                _ChildrenList = new ContextMenuItemList(_children);
                 Initialize(context);
             }
             catch (Exception ex)
@@ -66,7 +68,7 @@ namespace WV.Core.Browsering
 
         protected abstract bool EnableCore { get; set; }
 
-        public IContextMenuItem[] Children
+        public IContextMenuItemList Children
         {
             get
             {
@@ -75,7 +77,7 @@ namespace WV.Core.Browsering
                 try
                 {
                     ThrowIfDisposed();
-                    return _children!.ToArray();
+                    return _ChildrenList;
                 }
                 catch (Exception ex)
                 {
@@ -1334,11 +1336,10 @@ namespace WV.Core.Browsering
         {
             if (disposing)
             {
-                foreach (var item in _children!)
+                foreach (var item in _children)
                     item.Dispose();
 
                 _children.Clear();
-                _children = null;
             }
             DisposeCore(disposing);
         }

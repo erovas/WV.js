@@ -6,15 +6,32 @@ namespace WV.Core.Pluging
 {
     public abstract class PluginsCore : Plugin, IPlugins
     {
-        private readonly Dictionary<string, object> Instances = new();
-        private readonly ConcurrentDictionary<Type, object> SingletonInstances = new();
-        private readonly Dictionary<string, PluginLoader> Imported = new();
-
-        private readonly List<IPluginMetadata> LoadedItems = new();
+        private readonly Dictionary<string, object> _Instances = new();
+        private readonly ConcurrentDictionary<Type, object> _SingletonInstances = new();
+        private readonly Dictionary<string, PluginLoader> _Imported = new();
+        private readonly List<IPluginMetadata> _LoadedItems = new();
+        private readonly IPluginMetadataList _Loaded;
 
         #region Properties
 
-        public IPluginMetadataList Loaded { get; }
+        public IPluginMetadataList Loaded 
+        { 
+            get
+            {
+                var txt = nameof(Loaded);
+                LogCalling(txt, true);
+                try
+                {
+                    ThrowIfDisposed();
+                    return _Loaded;
+                }
+                catch (Exception ex)
+                {
+                    LogFail(txt, ex, true);
+                    throw;
+                }
+            }
+        }
 
         public string Directory { get; }
 
@@ -26,7 +43,7 @@ namespace WV.Core.Pluging
             LogCalling(txt);
             try
             {
-                Loaded = new PluginMetadataList(LoadedItems);
+                _Loaded = new PluginMetadataList(_LoadedItems);
                 Directory = Utils.GetFullDirectory(App.Directory, pluginsConfig.Directory);
                 Initialize(context, pluginsConfig);
             }
@@ -63,7 +80,7 @@ namespace WV.Core.Pluging
 
         protected virtual object GetInstanceCore(string UID)
         {
-            return Instances[UID];
+            return _Instances[UID];
         }
 
         public IPluginLoadResult Load(string pluginPath)
@@ -135,7 +152,7 @@ namespace WV.Core.Pluging
         {
             PluginLoader? pluginLoader = null;
 
-            if (pluginName != this.WebView.Name && !this.Imported.TryGetValue(pluginName, out pluginLoader))
+            if (pluginName != this.WebView.Name && !this._Imported.TryGetValue(pluginName, out pluginLoader))
                 throw new Exception($"Plugin [{pluginName}] no exists");
 
             Type pluginType = pluginLoader != null ? pluginLoader.Type : Utils.WebViewType;
@@ -146,7 +163,7 @@ namespace WV.Core.Pluging
 
             // Verifica si el plugin está marcado como singleton.
             if (pluginLoader != null && pluginLoader.Metadata.Singleton)
-                return this.SingletonInstances.GetOrAdd(pluginType, type => CreateInstance(type, pluginName, Args.ToArray()));
+                return this._SingletonInstances.GetOrAdd(pluginType, type => CreateInstance(type, pluginName, Args.ToArray()));
 
             return CreateInstance(pluginType, pluginName, Args.ToArray());
         }
@@ -169,13 +186,13 @@ namespace WV.Core.Pluging
 
         protected virtual void UnloadCore(string pluginName)
         {
-            if (!this.Imported.ContainsKey(pluginName))
+            if (!this._Imported.ContainsKey(pluginName))
                 throw new Exception($"[{pluginName}] Plugin not found.");
 
-            var ctx = this.Imported[pluginName];
+            var ctx = this._Imported[pluginName];
 
             // Obtener todas las instancias del plugin <uid, object>
-            var instances = this.Instances.Where(i => ctx.Type == i.Value.GetType()).ToList();
+            var instances = this._Instances.Where(i => ctx.Type == i.Value.GetType()).ToList();
 
             // Verificar si existe alguna instancia sin hacer Dispose()
             foreach (var instance in instances)
@@ -183,16 +200,16 @@ namespace WV.Core.Pluging
                     throw new Exception($"The [{pluginName}] plugin cannot be unloaded while instances remain undisposed. {Environment.NewLine} Instance UID = {plugin.UID}");
 
             foreach (var instance in instances)
-                this.Instances.Remove(instance.Key);
+                this._Instances.Remove(instance.Key);
 
             // Puede que sea un plugin Singleton
-            this.SingletonInstances.TryRemove(ctx.Type, out object? _);
+            this._SingletonInstances.TryRemove(ctx.Type, out object? _);
 
             ctx.Unload();
-            this.Imported.Remove(pluginName);
-            var item = LoadedItems.FirstOrDefault(x => x.Name == pluginName);
+            this._Imported.Remove(pluginName);
+            var item = _LoadedItems.FirstOrDefault(x => x.Name == pluginName);
             if (item != null)
-                LoadedItems.Remove(item);
+                _LoadedItems.Remove(item);
         }
 
         private void PluginDisposedEvent(string UID)
@@ -201,11 +218,11 @@ namespace WV.Core.Pluging
             LogCalling(txt);
             try
             {
-                if (!this.Instances.TryGetValue(UID, out object? instance))
+                if (!this._Instances.TryGetValue(UID, out object? instance))
                     return;
 
-                this.Instances.Remove(UID);
-                this.SingletonInstances.TryRemove(instance.GetType(), out object? _);
+                this._Instances.Remove(UID);
+                this._SingletonInstances.TryRemove(instance.GetType(), out object? _);
             }
             catch (Exception ex)
             {
@@ -218,22 +235,22 @@ namespace WV.Core.Pluging
 
         protected override void Dispose(bool disposing)
         {
-            SingletonInstances.Clear();
+            _SingletonInstances.Clear();
 
-            foreach (Plugin item in Instances.Values)
+            foreach (Plugin item in _Instances.Values)
                 try
                 {
                     item.Dispose();
                 }
                 catch (Exception) { }
 
-            Instances.Clear();            
+            _Instances.Clear();            
 
-            foreach (var ctx in Imported.Values)
+            foreach (var ctx in _Imported.Values)
                 ctx.Unload();
 
-            Imported.Clear();
-            LoadedItems.Clear();
+            _Imported.Clear();
+            _LoadedItems.Clear();
         }
 
         #region Helpers
@@ -244,7 +261,7 @@ namespace WV.Core.Pluging
             {
                 pluginPath = GetFullDirectory(pluginPath);
 
-                foreach (var md in this.Imported.Values.ToList().Select(x => x.Metadata))
+                foreach (var md in this._Imported.Values.ToList().Select(x => x.Metadata))
                     if (md.Path == pluginPath)
                         return PluginLoadResult.Ok(md);
                 
@@ -253,14 +270,14 @@ namespace WV.Core.Pluging
                 var name = metadata.Name;
                 var path = metadata.Path;
 
-                if (this.Imported.ContainsKey(name))
+                if (this._Imported.ContainsKey(name))
                 {
                     pluginLoader.Unload();
-                    return PluginLoadResult.Fail(metadata, $"A plugin named [{name}] has already been loaded from the path [{this.Imported[name].Metadata.Path}].");
+                    return PluginLoadResult.Fail(metadata, $"A plugin named [{name}] has already been loaded from the path [{this._Imported[name].Metadata.Path}].");
                 }
 
-                this.Imported.Add(name, pluginLoader);
-                this.LoadedItems.Add(metadata);
+                this._Imported.Add(name, pluginLoader);
+                this._LoadedItems.Add(metadata);
                 return PluginLoadResult.Ok(metadata);
             }
             catch (Exception ex)
@@ -276,7 +293,7 @@ namespace WV.Core.Pluging
             if (pluginInstance == null)
                 throw new Exception($"Impossible to build plugin instance [{pluginName}]");
 
-            this.Instances.Add(((Plugin)pluginInstance).UID, pluginInstance);
+            this._Instances.Add(((Plugin)pluginInstance).UID, pluginInstance);
 
             return pluginInstance;
         }

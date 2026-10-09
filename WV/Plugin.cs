@@ -80,7 +80,7 @@ namespace WV
         /// <param name="type"></param>
         /// <param name="callback"></param>
         /// <exception cref="InvalidOperationException"></exception>
-        public void AddEventListener(string type, object callback)
+        public virtual void AddEventListener(string type, object callback)
         {
             var txt = $"{nameof(AddEventListener)}(\"{type}\", {nameof(callback)}) method.";
             Logger.Info("##. Calling " + txt);
@@ -164,7 +164,7 @@ namespace WV
         /// </summary>
         /// <param name="type"></param>
         /// <param name="callback"></param>
-        public void RemoveEventListener(string type, object callback)
+        public virtual void RemoveEventListener(string type, object callback)
         {
             var txt = $"{nameof(RemoveEventListener)}(\"{type}\", {nameof(callback)}) method.";
             Logger.Info($"##. Calling " + txt);

@@ -60,7 +60,6 @@ namespace WV.Win.Imp
 
         private Dictionary<string, NatItem> DicPropNativeItems => _dicPropNativeItems!;
         private Dictionary<string, IContextMenuItem> _ItemInstances => _itemInstances!;
-        private List<IContextMenuItem> _Children => _children!;
         private string Directory => ((WebView)WebView).InternalBrowser.Directory;
 
         public ContextMenu(IPluginContext context, string directory) : base(context)
@@ -296,28 +295,28 @@ namespace WV.Win.Imp
         protected override void AddItemCore(IContextMenuItem item)
         {
             this.AllowInsertItem(item);
-            this._Children.Add(item);
+            this._children.Add(item);
         }
 
         protected override void InsertItemCore(int index, IContextMenuItem item)
         {
             this.AllowInsertItem(item);
-            this._Children.Insert(index, item);
+            this._children.Insert(index, item);
         }
 
         protected override bool RemoveItemCore(IContextMenuItem item)
         {
-            return this._Children.Remove(item);
+            return this._children.Remove(item);
         }
 
         protected override void RemoveItemAtCore(int index)
         {
-            this._Children.RemoveAt(index);
+            this._children.RemoveAt(index);
         }
 
         protected override void ClearCore()
         {            
-            this._Children.Clear();
+            this._children.Clear();
         }
 
         #endregion
@@ -344,7 +343,7 @@ namespace WV.Win.Imp
             if (item.Parent != null)
                 throw new Exception("This item belongs to a submenu");
 
-            if (this._Children.Contains(item))
+            if (this._children.Contains(item))
                 throw new Exception("This item already exists");
         }
 
@@ -379,7 +378,7 @@ namespace WV.Win.Imp
             }
                 
             // Inyectar Custom Items
-            foreach (var item in this._Children)
+            foreach (var item in this._children)
                 if(item.Visible)
                     e.MenuItems.Add(((ContextMenuItem)item)._Item);
         }
@@ -392,7 +391,7 @@ namespace WV.Win.Imp
             foreach (var item in this.DicPropNativeItems)
                 item.Value.Visible = true;
 
-            this._Children.Clear();
+            this._children.Clear();
             
             foreach (var item in this._ItemInstances.Values)
                 item.Dispose();
