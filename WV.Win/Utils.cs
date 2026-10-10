@@ -1,14 +1,8 @@
-﻿using WV.Enums;
-using WV.Win.Imp;
-using WV.Win.Win32;
-using WV.Win.Win32.Enums;
+﻿using WV.Win.Imp;
 using System.Diagnostics;
-using WV.Win.Win32.Structs;
 using System.Globalization;
 using Microsoft.Web.WebView2.Core;
-using System.Runtime.InteropServices;
 using WV.Interfaces;
-using WV.Core.Pluging;
 
 namespace WV.Win
 {
@@ -267,6 +261,11 @@ namespace WV.Win
         public static double CM2INCH(double value)
         {
             return value / 2.54;
+        }
+
+        public static void ExitApp()
+        {
+            System.Environment.Exit(1);
         }
     }
 }

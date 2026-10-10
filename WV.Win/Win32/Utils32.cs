@@ -337,5 +337,21 @@ namespace WV.Win.Win32
             return MainhWnd;
         }
 
+        public static void MsgBoxError(IntPtr handle, string msg, Exception? ex = null)
+        {
+            User32.MessageBox(handle, msg + System.Environment.NewLine + ex?.Message, "Error", (uint)(MsgBoxStyle.MB_OK | MsgBoxStyle.MB_ICONERROR));
+        }
+
+        public static bool MsgBoxYesNo(IntPtr handle, string msg, string caption = "")
+        {
+            var result = User32.MessageBox(handle, msg, caption, (uint)(MsgBoxStyle.MB_YESNO | MsgBoxStyle.MB_ICONINFORMATION));
+            return result == (int)MsgBoxResult.IDYES;
+        }
+
+        public static void MsgBoxInfo(IntPtr handle, string msg, string caption = "")
+        {
+            User32.MessageBox(handle, msg, caption, (uint)(MsgBoxStyle.MB_OK | MsgBoxStyle.MB_ICONINFORMATION));
+        }
+
     }
 }

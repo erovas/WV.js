@@ -5,6 +5,7 @@ using WV.Core.Logging;
 using WV.Core.Logging.Sinks;
 using WV.Enums;
 using WV.Configs;
+using WV.Win.Win32;
 
 namespace WV.Win
 {
@@ -16,23 +17,30 @@ namespace WV.Win
             // Cargar JScript principal
             Utils.JScripts.Add(PackJScript(ScriptResources.MainScript.Replace("-HostObjectName-", Utils.HostObjectName)));
 
-            WebViewConfig config = new();
-
-            if (args.Length > 0)
-                config = Core.Utils.GetWebViewConfig(args[0]) ?? config;
-            else
+            try
             {
-                var path = Path.Combine(App.Directory, "WV.json");
+                WebViewConfig config = new();
 
-                if(File.Exists(path))
-                    config = Core.Utils.GetWebViewConfig(File.ReadAllText(path)) ?? config;
+                if (args.Length > 0)
+                    config = Core.Utils.GetWebViewConfig(args[0]) ?? config;
+                else
+                {
+                    var path = Path.Combine(App.Directory, "WV.json");
+
+                    if (File.Exists(path))
+                        config = Core.Utils.GetWebViewConfig(File.ReadAllText(path)) ?? config;
+                }
+
+                IPluginContext ctx = CreateDefaultContext(config);
+
+                // Se inicia una Instancia de WebView (Inicia el programa)
+                _ = new WebView(ctx, config);
             }
-
-            IPluginContext ctx = CreateDefaultContext(config);
-
-            // Se inicia una Instancia de WebView (Inicia el programa)
-            _ = new WebView(ctx, config);
-
+            catch (Exception ex)
+            {
+                Utils32.MsgBoxError(IntPtr.Zero, "Error", ex.InnerException ?? ex);
+                throw;
+            }
         }
 
         private static string PackJScript(string? script)
@@ -42,12 +50,13 @@ namespace WV.Win
 
         private static ILogger CreateDefaultLogger(LoggerConfig config)
         {
-            var logDir = Core.Utils.GetFullDirectory(App.Directory, config.Directory);
+            var logDir = Core.Utils.GetFullDirectory(App.Directory, config.Directory, false);
 
             var logger = new Logger(config.Source)
                 .AddSink(new ConsoleSink())
                 .AddSink(new FileSink(Path.Combine(logDir, "wv.log")));
 
+            logger.Enabled = config.Enabled;
             logger.MinimumLevel = LogLevel.Debug;
             return logger;
         }

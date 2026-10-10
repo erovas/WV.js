@@ -59,10 +59,13 @@ namespace WV.Win.Imp
             catch (Exception ex)
             {
                 var msg = "Failed to initialize WV.js";
-                
-                if(_IsMain)
-                    MsgBoxError(Window.Handle, msg, ex);
-                
+
+                if (_IsMain)
+                {
+                    Utils32.MsgBoxError(Window.Handle, msg, ex);
+                    Utils.ExitApp();
+                }
+
                 throw;
             }
             
@@ -357,17 +360,16 @@ namespace WV.Win.Imp
             }
             catch (WebView2RuntimeNotFoundException)
             {
-                var result = User32.MessageBox(hwnd, "WebView2 runtime not installed. Want to install it now?", App.Window.Title, (uint)(MsgBoxStyle.MB_YESNO | MsgBoxStyle.MB_ICONINFORMATION));
+                var yes = Utils32.MsgBoxYesNo(hwnd, "WebView2 runtime not installed. Want to install it now?", App.Window.Title);
 
-                // Puede ser Cancel (cerrado con X)
-                if (result != (int)MsgBoxResult.IDYES)
-                    System.Environment.Exit(1);
+                if (!yes)
+                    Utils.ExitApp();
 
                 try
                 {
                     string installerPath = await Utils.DownloadWebView2Bootstrapper();
 
-                    User32.MessageBox(hwnd, "The WebView2 installer will open. Complete the steps to continue.", App.Window.Title, (uint)(MsgBoxStyle.MB_OK | MsgBoxStyle.MB_ICONINFORMATION));
+                    Utils32.MsgBoxInfo(hwnd, "The WebView2 installer will open. Complete the steps to continue.", App.Window.Title);
 
                     bool success = Utils.InstallWebView2Runtime(installerPath);
 
@@ -375,16 +377,16 @@ namespace WV.Win.Imp
                         await CreateCoreWebView2Async(config, url);
                     else
                     {
-                        MsgBoxError(hwnd, "WebView2 installation not completed");
-                        System.Environment.Exit(1);
+                        Utils32.MsgBoxError(hwnd, "WebView2 installation not completed");
+                        Utils.ExitApp();
                     }
                         
                 }
                 catch (Exception exc)
                 {
                     this.Logger.Critical("Failed to install WV.js", exc);
-                    MsgBoxError(hwnd, exc.Message);
-                    System.Environment.Exit(1);
+                    Utils32.MsgBoxError(hwnd, exc.Message);
+                    Utils.ExitApp();
                 }
             }
             catch (ArgumentException ex)
@@ -393,8 +395,8 @@ namespace WV.Win.Imp
 
                 if (_IsMain)
                 {
-                    MsgBoxError(hwnd, "Failed to initialize WV.js:", ex);
-                    System.Environment.Exit(1);
+                    Utils32.MsgBoxError(hwnd, "Failed to initialize WV.js:", ex);
+                    Utils.ExitApp();
                 }
 
                 this.Dispose();
@@ -406,8 +408,8 @@ namespace WV.Win.Imp
                 this.Logger.Critical("Failed to initialize WV.js", ex);
                 if (_IsMain)
                 {
-                    MsgBoxError(hwnd, "Failed to initialize WV.js:", ex);
-                    System.Environment.Exit(1);
+                    Utils32.MsgBoxError(hwnd, "Failed to initialize WV.js:", ex);
+                    Utils.ExitApp();
                 }
                 this.Dispose();
                 throw;
@@ -839,11 +841,6 @@ namespace WV.Win.Imp
         #endregion
 
         //------------------------//
-
-        private static void MsgBoxError(IntPtr handle, string msg, Exception? ex = null)
-        {
-            User32.MessageBox(handle, msg + System.Environment.NewLine + ex?.Message, "Error", (uint)(MsgBoxStyle.MB_OK | MsgBoxStyle.MB_ICONERROR));
-        }
 
         #endregion
 

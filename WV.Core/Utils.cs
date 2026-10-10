@@ -130,21 +130,22 @@ namespace WV.Core
             return IPluginContext.Create(wv, logger, uid, name, onDisposed);
         }
 
-        public static string GetFullDirectory(string root, string? path)
+        public static string GetFullDirectory(string root, string? path, bool throwEx = true)
         {
-            if(string.IsNullOrWhiteSpace(path))
-                path = root;
+            string basePath = Path.GetFullPath(root);
 
-            if (!Path.IsPathFullyQualified(path))
-                path = Path.Combine(root, path);
+            if (string.IsNullOrWhiteSpace(path))
+                path = basePath;
+
+            path = Path.GetFullPath(path.TrimStart('/', '\\'), basePath);
 
             if (!string.IsNullOrWhiteSpace(Path.GetExtension(path)))
-                if(!File.Exists(path))
+                if(!File.Exists(path) && throwEx)
                     throw new FileNotFoundException($"The file [{path}] does not exist");
                 else
                     return path;
 
-            else if (!Directory.Exists(path))
+            else if (!Directory.Exists(path) && throwEx)
                 throw new Exception($"The directory [{path}] does not exist");
 
             return path;
